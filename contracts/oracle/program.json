@@ -7,9 +7,9 @@
   "dependencies": [
     {
       "name": "token_registry.aleo",
-      "location": "network",
-      "network": "testnet",
-      "path": null
+      "location": "local",
+      "network": null,
+      "path": "../token-registry-workaround"
     }
   ]
 }

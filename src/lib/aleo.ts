@@ -6,21 +6,41 @@ export const TRANSACTION_FEE = 1_000_000;
 
 const FIELD_MODULUS =
   8444461749428370424248824938781546531375899335154063827935233455917409239041n;
+const U32_MAX = 4_294_967_295n;
+const U64_MAX = 18_446_744_073_709_551_615n;
+const U128_MAX = 340_282_366_920_938_463_463_374_607_431_768_211_455n;
 
-export const toField = (value: string) => {
+function normalizeUnsigned(
+  value: string,
+  suffix: 'field' | 'u32' | 'u64' | 'u128',
+  maximum: bigint,
+) {
   const trimmed = value.trim();
-  return trimmed.endsWith('field') ? trimmed : `${trimmed || '0'}field`;
-};
+  const withoutSuffix = trimmed.endsWith(suffix)
+    ? trimmed.slice(0, -suffix.length)
+    : trimmed;
+  if (!/^(0|[1-9][\d_]*)$/.test(withoutSuffix)) {
+    throw new Error(`${suffix} values must be unsigned decimal integers.`);
+  }
+  const digits = withoutSuffix.replaceAll('_', '');
+  const integer = BigInt(digits);
+  if (integer > maximum) throw new Error(`${suffix} value is out of range.`);
+  return `${digits}${suffix}`;
+}
 
-export const toU128 = (value: string) => {
-  const trimmed = value.trim();
-  return trimmed.endsWith('u128') ? trimmed : `${trimmed || '0'}u128`;
-};
+export const toField = (value: string) =>
+  normalizeUnsigned(value, 'field', FIELD_MODULUS - 1n);
 
-export const toU32 = (value: string) => {
-  const trimmed = value.trim();
-  return trimmed.endsWith('u32') ? trimmed : `${trimmed || '0'}u32`;
-};
+export const toU32 = (value: string) => normalizeUnsigned(value, 'u32', U32_MAX);
+export const toU64 = (value: string) => normalizeUnsigned(value, 'u64', U64_MAX);
+export const toU128 = (value: string) => normalizeUnsigned(value, 'u128', U128_MAX);
+
+export function normalizeRecord(value: string, label: string) {
+  const record = value.trim();
+  if (!record) throw new Error(`${label} is required.`);
+  if (record.length > 100_000) throw new Error(`${label} is too large.`);
+  return record;
+}
 
 export async function textToField(value: string) {
   const encoded = new TextEncoder().encode(value.trim());
@@ -34,7 +54,11 @@ export async function textToField(value: string) {
 
 export function asciiToU128(value: string) {
   const bytes = new TextEncoder().encode(value);
+  if (bytes.length === 0) throw new Error('Token metadata cannot be empty.');
   if (bytes.length > 16) throw new Error('Token metadata is limited to 16 ASCII bytes.');
+  if (Array.from(bytes).some((byte) => byte > 0x7f)) {
+    throw new Error('Token metadata must use ASCII characters.');
+  }
   const integer = Array.from(bytes).reduce(
     (result, byte) => (result << 8n) + BigInt(byte),
     0n,

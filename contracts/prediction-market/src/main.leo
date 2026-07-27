@@ -3,7 +3,9 @@ import dark_optimistic_oracle.aleo;
 import token_registry.aleo;
 
 const ZERO_ADDRESS: address = aleo1ezamst4pjgj9zfxqq0fwfj8a4cjuqndmasgata3hggzqygggnyfq6kmyd4;
-const MAX_OUTCOME_SUPPLY: u128 = 340282366920938463463374607431768211455u128;
+const MAX_OUTCOME_SUPPLY: u128 = 18446744073709551615u128; // u64::MAX
+const MAX_INITIAL_LIQUIDITY: u64 = 9223372036854775807u64; // floor(u64::MAX / 2)
+const MAX_COLLATERAL: u128 = 18446744073709551615u128; // u64::MAX, matching credits balances
 
 struct Market {
     id: field,
@@ -20,6 +22,23 @@ struct Market {
     betting_deadline_block_height: u32,
 }
 
+fn resolve_binary_outcome_logic(reported_outcome: bool, assertion_valid: bool) -> bool {
+    return reported_outcome == assertion_valid;
+}
+
+fn calculate_redemption_logic(
+    amount: u128,
+    total_collateral: u128,
+    winning_supply: u128
+) -> u128 {
+    assert(amount > 0u128);
+    assert(winning_supply > 0u128);
+    assert(winning_supply <= MAX_OUTCOME_SUPPLY);
+    assert(amount <= winning_supply);
+    assert(total_collateral <= MAX_COLLATERAL);
+    return amount * total_collateral / winning_supply;
+}
+
 program doo_prediction_market.aleo {
     // Development admin. Public deployment scripts must replace this address.
     // Leo 4 upgrade policy: only this admin can deploy upgrades.
@@ -34,6 +53,19 @@ program doo_prediction_market.aleo {
     mapping resolved: field => bool;
     mapping resolutions: field => bool;
     mapping settlement_collateral: field => u128;
+
+    // Pure helpers are shared by settlement/finalize logic and Leo unit tests.
+    fn resolve_binary_outcome(public reported_outcome: bool, public assertion_valid: bool) -> bool {
+        return resolve_binary_outcome_logic(reported_outcome, assertion_valid);
+    }
+
+    fn calculate_redemption(
+        public amount: u128,
+        public total_collateral: u128,
+        public winning_supply: u128
+    ) -> u128 {
+        return calculate_redemption_logic(amount, total_collateral, winning_supply);
+    }
 
     // Registers YES<x> and NO<x> as independent token-registry assets and
     // seeds both sides with an equal amount of public Aleo credits. DOOR is
@@ -81,8 +113,13 @@ program doo_prediction_market.aleo {
         return final {
             assert_eq(Mapping::get_or_use(market_creators, market.id, ZERO_ADDRESS), ZERO_ADDRESS);
             assert_neq(market.yes_token_id, market.no_token_id);
+            assert_neq(market.yes_token_name, 0u128);
+            assert_neq(market.no_token_name, 0u128);
+            assert_neq(market.yes_token_symbol, 0u128);
+            assert_neq(market.no_token_symbol, 0u128);
             assert(market.betting_deadline_block_height > block.height);
             assert(initial_liquidity > 0u64);
+            assert(initial_liquidity <= MAX_INITIAL_LIQUIDITY);
 
             Mapping::set(markets, market.id, market);
             Mapping::set(market_creators, market.id, creator);
@@ -130,14 +167,20 @@ program doo_prediction_market.aleo {
             assert(!Mapping::get_or_use(resolved, market_id, false));
 
             let current_collateral: u128 = Mapping::get_or_use(collateral_pool, market_id, 0u128);
-            Mapping::set(collateral_pool, market_id, current_collateral + token_amount);
+            let next_collateral: u128 = current_collateral + token_amount;
+            assert(next_collateral <= MAX_COLLATERAL);
+            Mapping::set(collateral_pool, market_id, next_collateral);
 
             if outcome {
                 let current_yes: u128 = Mapping::get_or_use(yes_supply, market_id, 0u128);
-                Mapping::set(yes_supply, market_id, current_yes + token_amount);
+                let next_yes: u128 = current_yes + token_amount;
+                assert(next_yes <= MAX_OUTCOME_SUPPLY);
+                Mapping::set(yes_supply, market_id, next_yes);
             } else {
                 let current_no: u128 = Mapping::get_or_use(no_supply, market_id, 0u128);
-                Mapping::set(no_supply, market_id, current_no + token_amount);
+                let next_no: u128 = current_no + token_amount;
+                assert(next_no <= MAX_OUTCOME_SUPPLY);
+                Mapping::set(no_supply, market_id, next_no);
             }
 
             deposit.run();
@@ -153,13 +196,15 @@ program doo_prediction_market.aleo {
         public assertion_id: field,
         public reported_outcome: bool,
         public reported_claim_hash: field,
-        public assertion_valid: bool
+        public assertion_valid: bool,
+        public betting_deadline_block_height: u32
     ) -> Final {
         let verify: Final = dark_optimistic_oracle.aleo::verify_assertion_outcome(
             assertion_id,
             market_id,
             reported_claim_hash,
-            assertion_valid
+            assertion_valid,
+            betting_deadline_block_height
         );
 
         return final {
@@ -167,9 +212,10 @@ program doo_prediction_market.aleo {
             let expected_claim_hash: field = reported_outcome
                 ? market.yes_claim_hash
                 : market.no_claim_hash;
-            let outcome: bool = reported_outcome == assertion_valid;
+            let outcome: bool = resolve_binary_outcome_logic(reported_outcome, assertion_valid);
             assert_eq(market.assertion_id, assertion_id);
             assert_eq(reported_claim_hash, expected_claim_hash);
+            assert_eq(market.betting_deadline_block_height, betting_deadline_block_height);
             assert(block.height > market.betting_deadline_block_height);
             assert(!Mapping::get_or_use(resolved, market_id, false));
 
@@ -178,6 +224,7 @@ program doo_prediction_market.aleo {
                 ? Mapping::get(yes_supply, market_id)
                 : Mapping::get(no_supply, market_id);
             assert(winning_supply > 0u128);
+            assert(winning_supply <= MAX_OUTCOME_SUPPLY);
 
             Mapping::set(resolved, market_id, true);
             Mapping::set(resolutions, market_id, outcome);
@@ -215,11 +262,14 @@ program doo_prediction_market.aleo {
                 ? Mapping::get(yes_supply, market_id)
                 : Mapping::get(no_supply, market_id);
             let total_collateral: u128 = Mapping::get(settlement_collateral, market_id);
-            let payout: u128 = payout_microcredits as u128;
+            let payout: u128 = calculate_redemption_logic(
+                amount,
+                total_collateral,
+                winning_supply
+            );
 
             assert_eq(outcome_token_id, winning_token_id);
-            assert(amount > 0u128);
-            assert_eq(payout, amount * total_collateral / winning_supply);
+            assert_eq(payout_microcredits as u128, payout);
 
             let remaining_collateral: u128 = Mapping::get(collateral_pool, market_id);
             Mapping::set(collateral_pool, market_id, remaining_collateral - payout);

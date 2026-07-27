@@ -29,11 +29,13 @@ import {
   TRANSACTION_FEE,
   asciiToU128,
   extractBlockHeight,
+  normalizeRecord,
   readMapping,
   textToField,
   toField,
   toU128,
   toU32,
+  toU64,
 } from './lib/aleo';
 
 type Stage = 'trade' | 'report' | 'challenge' | 'settle';
@@ -63,7 +65,7 @@ const stageItems: Array<{
   icon: typeof Binary;
 }> = [
   { id: 'trade', label: 'Trade', detail: 'Create or take a position', icon: Binary },
-  { id: 'report', label: 'Report', detail: 'Assert the YES outcome', icon: Flag },
+  { id: 'report', label: 'Report', detail: 'Assert the observed outcome', icon: Flag },
   { id: 'challenge', label: 'Review', detail: 'Dispute and vote privately', icon: Vote },
   { id: 'settle', label: 'Settle', detail: 'Resolve and claim', icon: BadgeCheck },
 ];
@@ -217,8 +219,23 @@ export default function PredictionMarket() {
     }
   };
 
+  const submit = async (
+    program: string,
+    functionName: string,
+    buildInputs: () => string[],
+  ) => {
+    try {
+      await run(program, functionName, buildInputs());
+    } catch (error) {
+      setNotice({
+        type: 'error',
+        message: error instanceof Error ? error.message : `Invalid input for ${functionName}.`,
+      });
+    }
+  };
+
   const createMarket = () =>
-    run(MARKET_PROGRAM_ID, 'create_market', [
+    submit(MARKET_PROGRAM_ID, 'create_market', () => [
       `{
         id: ${toField(marketId)},
         question_hash: ${questionHash},
@@ -233,19 +250,19 @@ export default function PredictionMarket() {
         no_token_symbol: ${asciiToU128(noTokenLabel)},
         betting_deadline_block_height: ${toU32(bettingDeadline)}
       }`,
-      `${initialLiquidity.trim() || '0'}u64`,
+      toU64(initialLiquidity),
     ]);
 
   const buyPosition = (outcome: boolean) =>
-    run(MARKET_PROGRAM_ID, 'buy_outcome', [
+    submit(MARKET_PROGRAM_ID, 'buy_outcome', () => [
       toField(marketId),
       String(outcome),
       outcome ? yesTokenId : noTokenId,
-      `${positionAmount.trim() || '0'}u64`,
+      toU64(positionAmount),
     ]);
 
   const reportOutcome = () =>
-    run(ORACLE_PROGRAM_ID, 'create_assertion', [
+    submit(ORACLE_PROGRAM_ID, 'create_assertion', () => [
       `{
         id: ${toField(assertionId)},
         title: ${toField(marketId)},
@@ -258,36 +275,39 @@ export default function PredictionMarket() {
     ]);
 
   const dispute = () =>
-    run(ORACLE_PROGRAM_ID, 'dispute_assertion', [
+    submit(ORACLE_PROGRAM_ID, 'dispute_assertion', () => [
       toField(assertionId),
       toU128(assertionCost),
     ]);
 
   const buyVotingRight = () =>
-    run(ORACLE_PROGRAM_ID, 'new_voting_right', [
-      privatePayment,
+    submit(ORACLE_PROGRAM_ID, 'new_voting_right', () => [
+      normalizeRecord(privatePayment, 'Private DOOR payment record'),
       toField(assertionId),
       toU128(voterStake),
     ]);
 
   const castVote = (outcome: boolean) =>
-    run(ORACLE_PROGRAM_ID, outcome ? 'confirm' : 'deny', [votingRight]);
+    submit(ORACLE_PROGRAM_ID, outcome ? 'confirm' : 'deny', () => [
+      normalizeRecord(votingRight, 'Private voting-right record'),
+    ]);
 
   const settle = () =>
-    run(MARKET_PROGRAM_ID, 'settle_market', [
+    submit(MARKET_PROGRAM_ID, 'settle_market', () => [
       toField(marketId),
       toField(assertionId),
       String(reportedOutcome),
       reportedOutcome ? yesClaimHash : noClaimHash,
       String(reportedOutcome === settlementOutcome),
+      toU32(bettingDeadline),
     ]);
 
   const claim = () =>
-    run(MARKET_PROGRAM_ID, 'redeem_winning_tokens', [
+    submit(MARKET_PROGRAM_ID, 'redeem_winning_tokens', () => [
       toField(marketId),
       positionOutcome ? yesTokenId : noTokenId,
       toU128(positionAmount),
-      `${payoutAmount.trim() || '0'}u64`,
+      toU64(payoutAmount),
     ]);
 
   const loadMarket = async () => {
@@ -725,8 +745,8 @@ export default function PredictionMarket() {
           <AlertTriangle aria-hidden="true" size={20} />
           <p>
             This is a Testnet demonstration. Contract source and upgrade policy are public,
-            but the checked-in development administrator must be replaced before deployment.
-            The deployment script refuses the placeholder.
+            and deployment substitutes the configured administrator into a temporary build.
+            Public-network deployment refuses the checked-in development placeholder.
           </p>
         </div>
         <div className="docs-actions">

@@ -31,12 +31,13 @@ Each market stores its question hash, canonical YES- and NO-claim hashes, assert
 - With a dispute, settlement waits for the voting deadline. Accepting the assertion selects its reported outcome; rejecting it selects the opposite binary outcome.
 
 The market cannot substitute a different assertion, claim hash, or outcome.
+The oracle also records the assertion creation height. Settlement rejects an assertion created at or before the market’s betting deadline, preventing a report from maturing while positions are still available.
 
 ## Upgrade policy
 
 Every Aleo program checked into this directory declares a Leo 4 `@admin` constructor. The checked-in address is a public local-development account. Replace it with a secure administrator controlled by the deployer before any public deployment. `deploy_testnet.sh` refuses the placeholder.
 
-The canonical Testnet `credits.aleo` and `token_registry.aleo` dependencies are network-owned programs and are not deployed or administered by this repository.
+The local registry source is referenced as a build dependency so contract tests are deterministic. Public deployment scripts require the canonical `credits.aleo` and `token_registry.aleo` programs and pass `--skip` for the local dependency, so neither network-owned program is deployed or administered by this repository.
 
 ## Build
 
@@ -44,6 +45,8 @@ From the repository root:
 
 ```bash
 ./contracts/build_all.sh
+./contracts/test_all.sh
 ```
 
 The script builds the local registry workaround first, followed by the oracle and prediction market.
+The test script executes Leo unit tests for oracle majority/tie behavior, reward arithmetic, assertion timing, binary settlement inversion, proportional payout, rounding, and invalid redemption boundaries.

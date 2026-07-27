@@ -70,6 +70,21 @@ describe('PredictionMarket', () => {
     );
   });
 
+  it('mints the NO outcome token when that side is selected', async () => {
+    render(<PredictionMarket />);
+
+    fireEvent.click(screen.getByRole('button', { name: /mint NO101/i }));
+
+    await waitFor(() =>
+      expect(executeTransactionMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          function: 'buy_outcome',
+          inputs: ['101field', 'false', expect.stringMatching(/field$/), '25000000u64'],
+        }),
+      ),
+    );
+  });
+
   it('uses DOOR only when reporting through the oracle lifecycle', async () => {
     render(<PredictionMarket />);
 
@@ -89,6 +104,114 @@ describe('PredictionMarket', () => {
         }),
       ),
     );
+  });
+
+  it('supports the full dispute and private-vote transaction path', async () => {
+    render(<PredictionMarket />);
+    fireEvent.click(screen.getByRole('tab', { name: /review/i }));
+
+    fireEvent.click(screen.getByRole('button', { name: /dispute assertion/i }));
+    await waitFor(() =>
+      expect(executeTransactionMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          function: 'dispute_assertion',
+          inputs: ['501field', '100000000u128'],
+        }),
+      ),
+    );
+
+    fireEvent.change(screen.getByLabelText(/private DOOR payment record/i), {
+      target: { value: '{ owner: aleo1private, amount: 1000000u128 }' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /create voting right/i }));
+    await waitFor(() =>
+      expect(executeTransactionMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          function: 'new_voting_right',
+          inputs: [
+            '{ owner: aleo1private, amount: 1000000u128 }',
+            '501field',
+            '1000000u128',
+          ],
+        }),
+      ),
+    );
+
+    fireEvent.change(screen.getByLabelText(/private voting-right record/i), {
+      target: { value: '{ owner: aleo1private, assertion_id: 501field }' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /^deny$/i }));
+    await waitFor(() =>
+      expect(executeTransactionMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          function: 'deny',
+          inputs: ['{ owner: aleo1private, assertion_id: 501field }'],
+        }),
+      ),
+    );
+  });
+
+  it('passes the market close height into oracle-gated settlement', async () => {
+    render(<PredictionMarket />);
+    fireEvent.click(screen.getByRole('tab', { name: /settle/i }));
+    fireEvent.click(screen.getByRole('button', { name: /^NO$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /settle from oracle/i }));
+
+    await waitFor(() =>
+      expect(executeTransactionMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          function: 'settle_market',
+          inputs: [
+            '101field',
+            '501field',
+            'true',
+            expect.stringMatching(/field$/),
+            'false',
+            '1010000u32',
+          ],
+        }),
+      ),
+    );
+  });
+
+  it('redeems only the selected winning token with an exact payout', async () => {
+    render(<PredictionMarket />);
+    fireEvent.click(screen.getByRole('tab', { name: /settle/i }));
+    fireEvent.change(screen.getByLabelText(/exact payout in microcredits/i), {
+      target: { value: '50000000' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /burn winner and redeem/i }));
+
+    await waitFor(() =>
+      expect(executeTransactionMock).toHaveBeenCalledWith(
+        expect.objectContaining({
+          function: 'redeem_winning_tokens',
+          inputs: [
+            '101field',
+            expect.stringMatching(/field$/),
+            '25000000u128',
+            '50000000u64',
+          ],
+        }),
+      ),
+    );
+  });
+
+  it('rejects malformed transaction input before invoking the wallet', async () => {
+    render(<PredictionMarket />);
+    fireEvent.change(screen.getByLabelText(/^Market ID$/i), { target: { value: '-1' } });
+    fireEvent.click(screen.getByRole('button', { name: /create market/i }));
+
+    expect(await screen.findByText(/field values must be unsigned decimal integers/i)).toBeInTheDocument();
+    expect(executeTransactionMock).not.toHaveBeenCalled();
+  });
+
+  it('surfaces wallet execution failures', async () => {
+    executeTransactionMock.mockRejectedValueOnce(new Error('Wallet rejected the request.'));
+    render(<PredictionMarket />);
+    fireEvent.click(screen.getByRole('button', { name: /mint YES101/i }));
+
+    expect(await screen.findByText(/wallet rejected the request/i)).toBeInTheDocument();
   });
 
   it('prevents writes when the wallet is disconnected', () => {

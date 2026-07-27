@@ -63,7 +63,10 @@ The aggregate confirm and deny counts are public so downstream contracts can ver
 │   └── token-registry-workaround/  # local devnet only
 ├── src/                            # React + TypeScript frontend
 ├── public/                         # static site assets
-├── deploy_testnet.sh               # guarded deploy-or-upgrade workflow
+├── deploy_local_devnet.sh          # local deploy-or-upgrade workflow
+├── deploy_testnet.sh               # guarded Testnet workflow
+├── deploy_mainnet.sh               # locked Mainnet workflow
+├── SECURITY.md                     # internal review, threat model, residual risks
 └── .github/workflows/pages.yml     # GitHub Pages build and deployment
 ```
 
@@ -93,10 +96,13 @@ pnpm dev
 Quality checks:
 
 ```bash
-pnpm lint
-pnpm test
-pnpm build
+pnpm check
+pnpm test:contracts
+pnpm deploy:check
+pnpm security:audit
 ```
+
+The browser suite covers input parsing, API handling, every frontend transaction family, all binary assertion-result combinations, deadline failures, claim binding, payout conservation, rounding, and repeat-redemption rejection. `pnpm test:contracts` runs the Leo unit tests for oracle and market rules. The deployment check compiles all three programs for each target without signing or broadcasting.
 
 The production build uses `/predmkt/` as its base path. To preview at the root locally:
 
@@ -115,27 +121,50 @@ Requirements: Leo 4.3.4 or a compatible release.
 
 Public Testnet already provides canonical `credits.aleo` and `token_registry.aleo`. The bundled token-registry workaround exists only for a local devnet.
 
-## Upgradeability and Testnet deployment
+## Upgradeability and deployment
 
-Every Aleo program checked into this repository declares a Leo 4 `@admin` constructor. The committed administrator is the public local-development account so the sources compile for local use. It is not safe for a public deployment.
+Every Aleo program checked into this repository declares a Leo 4 `@admin` constructor. The committed administrator is a public local-development account so the sources compile for local use. It is not safe for a public deployment.
 
-Before deploying:
+The deployment scripts copy the contracts to a temporary directory and substitute the configured administrator there. This preserves reproducible checked-in source while ensuring the deployed upgrade policy belongs to the signer. No deployment key belongs in source control.
 
-1. Replace the `@admin` address in all three checked-in programs with the same secure administrator address.
-2. Copy `.env.example` to `.env`.
-3. Set a funded Testnet `PRIVATE_KEY` and its matching `PROTOCOL_ADMIN`.
-4. Run `./deploy_testnet.sh`.
+### Local devnet
 
-The script:
+Start a compatible local Aleo devnet, copy `.env.devnet.example` to `.env.devnet`, add a funded local key and matching address, then run:
 
-- Refuses the known public development key or administrator.
-- Requires the canonical Testnet token registry and never deploys the workaround publicly.
-- Builds all source programs.
-- Deploys a missing oracle or performs an administrator-authorized upgrade.
-- Initializes DOOR only after the oracle’s initial deployment.
-- Deploys a missing market or performs an administrator-authorized upgrade.
+```bash
+./deploy_local_devnet.sh --dry-run
+./deploy_local_devnet.sh
+```
 
-No deployment key belongs in source control.
+Local deployment installs or upgrades the registry workaround before the oracle and market.
+With an Aleo devnode and the three programs running, execute the on-chain integration lifecycle:
+
+```bash
+pnpm test:integration:local
+```
+
+It creates a market, waits past betting, creates a post-close oracle assertion, waits through the grace period, settles YES, redeems the complete winning supply, and verifies that the collateral pool reaches zero.
+
+### Testnet
+
+Copy `.env.testnet.example` to `.env.testnet`, add a funded Testnet key and matching secure administrator, then run:
+
+```bash
+./deploy_testnet.sh --dry-run
+./deploy_testnet.sh
+```
+
+The script requires the canonical public token registry, skips the local workaround, and deploys missing custom programs or performs administrator-authorized upgrades.
+
+### Mainnet
+
+Mainnet support is present but intentionally locked. A dry run is safe:
+
+```bash
+./deploy_mainnet.sh --dry-run
+```
+
+An actual broadcast requires `.env.mainnet`, the exact confirmation value documented in its example, and an explicit `--confirm-mainnet` argument. Do not use it until deployment parameters, administrator custody, live-network integration tests, and an independent audit are complete.
 
 ## GitHub Pages
 
@@ -147,4 +176,4 @@ In the repository settings, select **GitHub Actions** as the Pages source. Jekyl
 
 The public client fails closed when either Testnet program is unavailable: documentation and source remain accessible, but transaction buttons are disabled. Deploy the programs with a secure administrator before treating the hosted interface as live.
 
-This software is a Testnet demonstration and has not been represented as production-ready or audited.
+This software is a Testnet demonstration. An internal engineering security review and its residual risks are documented in [SECURITY.md](SECURITY.md); it is not an independent audit or formal verification.

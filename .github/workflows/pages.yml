@@ -44,6 +44,9 @@ jobs:
       - name: Test
         run: pnpm test
 
+      - name: Static security checks
+        run: pnpm security:static
+
       - name: Build static site
         env:
           VITE_BASE_PATH: /predmkt/

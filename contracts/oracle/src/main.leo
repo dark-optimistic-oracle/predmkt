@@ -1,9 +1,15 @@
 import token_registry.aleo;
 
-const DOOR_TOKEN_ID: field = 17235612283251326583536974293363256992451820371731919189503231730609724436387field;
+// Canonical in-field representation of the DOOR token ID.
+const DOOR_TOKEN_ID: field = 346688784394585735039324415800163929700021701423791533632764818774905958305field;
 const ZERO_ADDRESS: address = aleo1ezamst4pjgj9zfxqq0fwfj8a4cjuqndmasgata3hggzqygggnyfq6kmyd4;
 const VOTER_REWARD_PER1000: u128 = 10u128; // 1% of the voter fee; minted privately
 const ASSERTER_PROTOCOL_FEE_PER1000: u128 = 100u128; // 10% of the asserter deposit
+const MIN_ASSERTION_COST: u128 = 10u128; // Keeps the protocol-fee calculation non-zero.
+const MIN_VOTER_STAKE: u128 = 100u128; // Keeps the voter-reward calculation non-zero.
+const MAX_BONDED_AMOUNT: u128 = 170141183460469231731687303715884105u128; // floor(u128::MAX / 2000)
+const MIN_DISPUTE_WINDOW_BLOCKS: u32 = 10u32;
+const MIN_VOTING_WINDOW_BLOCKS: u32 = 10u32;
 
 // Assertion details - all public
 struct Assertion {
@@ -16,6 +22,28 @@ struct Assertion {
     voting_deadline_block_height: u32,
 }
 
+fn vote_accepts_assertion_logic(confirm_count: u64, deny_count: u64) -> bool {
+    return confirm_count > deny_count;
+}
+
+fn calculate_voter_award_logic(voter_stake: u128) -> u128 {
+    assert(voter_stake >= MIN_VOTER_STAKE);
+    assert(voter_stake <= MAX_BONDED_AMOUNT);
+    return voter_stake * (1000u128 + VOTER_REWARD_PER1000) / 1000u128;
+}
+
+fn calculate_assertion_award_logic(assertion_cost: u128, disputed: bool) -> u128 {
+    assert(assertion_cost >= MIN_ASSERTION_COST);
+    assert(assertion_cost <= MAX_BONDED_AMOUNT);
+    return disputed
+        ? assertion_cost * (2000u128 - ASSERTER_PROTOCOL_FEE_PER1000) / 1000u128
+        : assertion_cost * (1000u128 - ASSERTER_PROTOCOL_FEE_PER1000) / 1000u128;
+}
+
+fn assertion_is_newer_than_logic(creation_height: u32, minimum_creation_height: u32) -> bool {
+    return creation_height > minimum_creation_height;
+}
+
 program dark_optimistic_oracle.aleo {
     // Development admin. Public deployment scripts must replace this address.
 
@@ -26,6 +54,7 @@ program dark_optimistic_oracle.aleo {
     mapping fees_collected: u8 => u128; // Total fees collected stored in the 0-th index
     mapping fee_collector: u8 => address; // owner (fee collector) of the contract stored in the 0-th index
     mapping assertions: field => Assertion; // assertionId => Assertion
+    mapping assertion_created_at: field => u32; // assertionId => creation height
     mapping asserters: field => address; // assertionId => asserter
     mapping disputers: field => address; // assertionId => disputer
     mapping confirm_votes: field => u64; // assertionId => confirming votes
@@ -52,6 +81,23 @@ program dark_optimistic_oracle.aleo {
 
     fn get_token_id() -> field {
         return DOOR_TOKEN_ID;
+    }
+
+    // Pure helpers are reused by finalize logic and exercised by Leo unit tests.
+    fn vote_accepts_assertion(public confirm_count: u64, public deny_count: u64) -> bool {
+        return vote_accepts_assertion_logic(confirm_count, deny_count);
+    }
+
+    fn calculate_voter_award(public voter_stake: u128) -> u128 {
+        return calculate_voter_award_logic(voter_stake);
+    }
+
+    fn calculate_assertion_award(public assertion_cost: u128, public disputed: bool) -> u128 {
+        return calculate_assertion_award_logic(assertion_cost, disputed);
+    }
+
+    fn assertion_is_newer_than(public creation_height: u32, public minimum_creation_height: u32) -> bool {
+        return assertion_is_newer_than_logic(creation_height, minimum_creation_height);
     }
 
     fn balance_key(public token_id: field, public account: address) -> public field {
@@ -102,11 +148,14 @@ program dark_optimistic_oracle.aleo {
 
         return final {
             assert_eq(Mapping::get_or_use(asserters, assertion.id, ZERO_ADDRESS), ZERO_ADDRESS); // assertion does not exist yet
-            assert(assertion.cost > 0u128);
-            assert(assertion.voter_stake > 0u128);
-            assert(assertion.dispute_deadline_block_height > block.height);
-            assert(assertion.voting_deadline_block_height > assertion.dispute_deadline_block_height);
+            assert(assertion.cost >= MIN_ASSERTION_COST);
+            assert(assertion.cost <= MAX_BONDED_AMOUNT);
+            assert(assertion.voter_stake >= MIN_VOTER_STAKE);
+            assert(assertion.voter_stake <= MAX_BONDED_AMOUNT);
+            assert(assertion.dispute_deadline_block_height >= block.height + MIN_DISPUTE_WINDOW_BLOCKS);
+            assert(assertion.voting_deadline_block_height >= assertion.dispute_deadline_block_height + MIN_VOTING_WINDOW_BLOCKS);
             Mapping::set(asserters, assertion.id, asserter);
+            Mapping::set(assertion_created_at, assertion.id, block.height);
             Mapping::set(confirm_votes, assertion.id, 0u64); // no confirmations yet
             Mapping::set(deny_votes, assertion.id, 0u64); // no disputes yet
 
@@ -199,8 +248,8 @@ program dark_optimistic_oracle.aleo {
                 assert(block.height > assertion.voting_deadline_block_height);
                 let y: u64 = Mapping::get_or_use(confirm_votes, assertion_id, 0u64);
                 let n: u64 = Mapping::get_or_use(deny_votes, assertion_id, 0u64);
-                assert(outcome ? y > n : y <=n); // Otherwise revert
-                assert(award_amount == assertion.voter_stake * (1000u128 + VOTER_REWARD_PER1000) / 1000u128);
+                assert_eq(outcome, vote_accepts_assertion_logic(y, n));
+                assert_eq(award_amount, calculate_voter_award_logic(assertion.voter_stake));
                 f.run();
             }
         );
@@ -234,11 +283,11 @@ program dark_optimistic_oracle.aleo {
             let n: u64 = Mapping::get_or_use(deny_votes, assertion_id, 0u64);
             if disputer == ZERO_ADDRESS {
                 assert(block.height > assertion.dispute_deadline_block_height);
-                assert_eq(payout_amount, assertion.cost * (1000u128 - ASSERTER_PROTOCOL_FEE_PER1000) / 1000u128);
+                assert_eq(payout_amount, calculate_assertion_award_logic(assertion.cost, false));
             } else {
                 assert(block.height > assertion.voting_deadline_block_height);
-                assert(y > n);
-                assert_eq(payout_amount, assertion.cost * (2000u128 - ASSERTER_PROTOCOL_FEE_PER1000) / 1000u128);
+                assert(vote_accepts_assertion_logic(y, n));
+                assert_eq(payout_amount, calculate_assertion_award_logic(assertion.cost, true));
             }
             Mapping::set(asserter_awards_claimed, assertion_id, true);
             f.run();
@@ -256,8 +305,8 @@ program dark_optimistic_oracle.aleo {
             assert(block.height > assertion.voting_deadline_block_height);
             let y: u64 = Mapping::get_or_use(confirm_votes, assertion_id, 0u64);
             let n: u64 = Mapping::get_or_use(deny_votes, assertion_id, 0u64);
-            assert(y <= n);
-            assert_eq(payout_amount, assertion.cost * (2000u128 - ASSERTER_PROTOCOL_FEE_PER1000) / 1000u128);
+            assert(!vote_accepts_assertion_logic(y, n));
+            assert_eq(payout_amount, calculate_assertion_award_logic(assertion.cost, true));
             Mapping::set(disputer_awards_claimed, assertion_id, true);
             f.run();
         };
@@ -270,12 +319,15 @@ program dark_optimistic_oracle.aleo {
         public assertion_id: field,
         public expected_title: field,
         public expected_content_hash: field,
-        public outcome: bool
+        public outcome: bool,
+        public minimum_creation_height: u32
     ) -> Final {
         return final {
             let assertion: Assertion = Mapping::get(assertions, assertion_id);
             assert_eq(assertion.title, expected_title);
             assert_eq(assertion.content_hash, expected_content_hash);
+            let creation_height: u32 = Mapping::get(assertion_created_at, assertion_id);
+            assert(assertion_is_newer_than_logic(creation_height, minimum_creation_height));
 
             let disputer: address = Mapping::get_or_use(disputers, assertion_id, ZERO_ADDRESS);
             if disputer == ZERO_ADDRESS {
@@ -285,7 +337,7 @@ program dark_optimistic_oracle.aleo {
                 assert(block.height > assertion.voting_deadline_block_height);
                 let y: u64 = Mapping::get_or_use(confirm_votes, assertion_id, 0u64);
                 let n: u64 = Mapping::get_or_use(deny_votes, assertion_id, 0u64);
-                assert_eq(outcome, y > n);
+                assert_eq(outcome, vote_accepts_assertion_logic(y, n));
             }
         };
     }
