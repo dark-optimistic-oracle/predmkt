@@ -1,7 +1,7 @@
 export const ORACLE_PROGRAM_ID = 'dark_optimistic_oracle.aleo';
 export const MARKET_PROGRAM_ID = 'doo_prediction_market.aleo';
 export const TESTNET_API_URL =
-  import.meta.env.VITE_ALEO_API_URL ?? 'https://api.explorer.provable.com/v1';
+  import.meta.env.VITE_ALEO_API_URL ?? 'https://api.explorer.provable.com/v2';
 export const TRANSACTION_FEE = 1_000_000;
 
 const FIELD_MODULUS =

@@ -3,21 +3,29 @@ set -euo pipefail
 
 SCRIPT_DIR="${0:A:h}"
 PROJECT_ROOT="${SCRIPT_DIR:h}"
-ENV_FILE="${ENV_FILE:-${PROJECT_ROOT}/.env.devnet}"
+PUBLIC_ENV_FILE="${PUBLIC_ENV_FILE:-${ENV_FILE:-${PROJECT_ROOT}/.env.devnet}}"
+PRIVATE_ENV_FILE="${PRIVATE_ENV_FILE:-${PROJECT_ROOT}/.env.private}"
 
-if [[ ! -f "$ENV_FILE" ]]; then
-  echo "Missing ${ENV_FILE}. Copy .env.devnet.example and add local credentials."
+if [[ ! -f "$PUBLIC_ENV_FILE" ]]; then
+  echo "Missing ${PUBLIC_ENV_FILE}. Copy .env.devnet.example."
+  exit 1
+fi
+if [[ ! -f "$PRIVATE_ENV_FILE" ]]; then
+  echo "Missing ${PRIVATE_ENV_FILE}. Copy .env.private.example and add local credentials."
   exit 1
 fi
 
+set +x
 set -a
-. "$ENV_FILE"
+. "$PUBLIC_ENV_FILE"
+. "$PRIVATE_ENV_FILE"
 set +a
 
 ENDPOINT="${ENDPOINT:-http://localhost:3030}"
 API_NETWORK="${API_NETWORK:-testnet}"
+PRIVATE_KEY="${DEVNET_PRIVATE_KEY:-}"
 if [[ -z "${PRIVATE_KEY:-}" ]]; then
-  echo "PRIVATE_KEY is required."
+  echo "DEVNET_PRIVATE_KEY is required in .env.private."
   exit 1
 fi
 
@@ -38,22 +46,33 @@ current_height() {
   curl -fsS "${ENDPOINT}/${API_NETWORK}/block/height/latest"
 }
 
-advance_to() {
+wait_until_height() {
   local target_height="$1"
+  local timeout_seconds="${2:-600}"
+  local started_at="$SECONDS"
   local height_now
-  height_now="$(current_height)"
-  if (( height_now < target_height )); then
-    leo devnode advance "$((target_height - height_now))" \
-      --socket-addr "${ENDPOINT#http://}" >/dev/null
-  fi
+  while true; do
+    height_now="$(current_height)"
+    if (( height_now >= target_height )); then
+      return
+    fi
+    if (( SECONDS - started_at >= timeout_seconds )); then
+      echo "Timed out waiting for devnet height ${target_height}; current height is ${height_now}."
+      exit 1
+    fi
+    sleep 2
+  done
 }
 
 run_execution() {
   local step_name="$1"
-  local contract_path="$2"
-  local function_name="$3"
-  shift 3
+  local function_name="$2"
+  shift 2
   local execution_output
+  local execution_exit
+  local transaction_id
+  local transaction_body
+  set +e
   execution_output="$(leo execute "$function_name" "$@" \
     --yes \
     --broadcast \
@@ -64,14 +83,37 @@ run_execution() {
     --max-wait 10 \
     --blocks-to-check 100 \
     --home "$TEST_HOME" \
-    --no-local \
-    --path "$contract_path" 2>&1)"
-  if [[ "$execution_output" != *"Execution confirmed!"* ]]; then
-    echo "$execution_output"
-    echo "${step_name} was not confirmed."
+    --no-local 2>&1)"
+  execution_exit=$?
+  set -e
+  if (( execution_exit == 0 )) && [[ "$execution_output" == *"Execution confirmed!"* ]]; then
+    echo "${step_name} confirmed."
+    return
+  fi
+
+  transaction_id="$(
+    printf '%s\n' "$execution_output" |
+      rg -o 'at1[[:alnum:]]+' |
+      head -n 1 ||
+      true
+  )"
+  if [[ -n "$transaction_id" ]]; then
+    transaction_body="$(
+      curl -fsS "${ENDPOINT}/${API_NETWORK}/transaction/${transaction_id}" ||
+        true
+    )"
+    if [[ "$transaction_body" == *'"type": "execute"'* ]]; then
+      echo "${step_name} confirmed as ${transaction_id}."
+      return
+    fi
+  fi
+
+  if (( execution_exit != 0 )) || [[ "$execution_output" != *"Execution confirmed!"* ]]; then
+    printf '%s\n' "$execution_output" |
+      sed -E 's/APrivateKey1[[:alnum:]]+/[REDACTED]/g'
+    echo "${step_name} was not confirmed (exit ${execution_exit})."
     exit 1
   fi
-  echo "${step_name} confirmed."
 }
 
 start_height="$(current_height)"
@@ -83,7 +125,7 @@ no_claim_hash="$((base_id + 3))field"
 assertion_id="$((base_id + 4))field"
 yes_token_id="$((base_id + 5))field"
 no_token_id="$((base_id + 6))field"
-betting_deadline="$((start_height + 3))"
+betting_deadline="$((start_height + 20))"
 
 market="{
   id: ${market_id},
@@ -102,15 +144,14 @@ market="{
 
 run_execution \
   "Create market" \
-  "$PROJECT_ROOT/contracts/prediction-market" \
-  create_market \
+  doo_prediction_market.aleo::create_market \
   "$market" \
   1000000u64
 
-advance_to "$((betting_deadline + 1))"
+wait_until_height "$((betting_deadline + 1))"
 report_height="$(current_height)"
-dispute_deadline="$((report_height + 11))"
-voting_deadline="$((dispute_deadline + 10))"
+dispute_deadline="$((report_height + 20))"
+voting_deadline="$((dispute_deadline + 20))"
 assertion="{
   id: ${assertion_id},
   title: ${market_id},
@@ -123,15 +164,13 @@ assertion="{
 
 run_execution \
   "Create post-close assertion" \
-  "$PROJECT_ROOT/contracts/oracle" \
-  create_assertion \
+  dark_optimistic_oracle.aleo::create_assertion \
   "$assertion"
 
-advance_to "$((dispute_deadline + 1))"
+wait_until_height "$((dispute_deadline + 1))"
 run_execution \
   "Settle undisputed YES market" \
-  "$PROJECT_ROOT/contracts/prediction-market" \
-  settle_market \
+  doo_prediction_market.aleo::settle_market \
   "$market_id" \
   "$assertion_id" \
   true \
@@ -141,8 +180,7 @@ run_execution \
 
 run_execution \
   "Redeem complete winning supply" \
-  "$PROJECT_ROOT/contracts/prediction-market" \
-  redeem_winning_tokens \
+  doo_prediction_market.aleo::redeem_winning_tokens \
   "$market_id" \
   "$yes_token_id" \
   1000000u128 \

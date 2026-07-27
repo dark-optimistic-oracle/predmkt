@@ -8,7 +8,7 @@ shift || true
 
 usage() {
   echo "Usage: deploy_{local_devnet|testnet|mainnet}.sh [--dry-run] [--confirm-mainnet]"
-  echo "Set ENV_FILE to override the default .env.<network> file."
+  echo "Set PUBLIC_ENV_FILE or PRIVATE_ENV_FILE to override the default environment files."
 }
 
 if [[ "$NETWORK_NAME" != "devnet" && "$NETWORK_NAME" != "testnet" && "$NETWORK_NAME" != "mainnet" ]]; then
@@ -38,21 +38,35 @@ for argument in "$@"; do
   esac
 done
 
-DEFAULT_ENV_FILE="${PROJECT_ROOT}/.env.${NETWORK_NAME}"
-ENV_FILE="${ENV_FILE:-$DEFAULT_ENV_FILE}"
-if [[ "$ENV_FILE" != /* ]]; then
-  ENV_FILE="${PROJECT_ROOT}/${ENV_FILE}"
+DEFAULT_PUBLIC_ENV_FILE="${PROJECT_ROOT}/.env.${NETWORK_NAME}"
+PUBLIC_ENV_FILE="${PUBLIC_ENV_FILE:-${ENV_FILE:-$DEFAULT_PUBLIC_ENV_FILE}}"
+PRIVATE_ENV_FILE="${PRIVATE_ENV_FILE:-${PROJECT_ROOT}/.env.private}"
+if [[ "$PUBLIC_ENV_FILE" != /* ]]; then
+  PUBLIC_ENV_FILE="${PROJECT_ROOT}/${PUBLIC_ENV_FILE}"
 fi
-if [[ -f "$ENV_FILE" ]]; then
+if [[ "$PRIVATE_ENV_FILE" != /* ]]; then
+  PRIVATE_ENV_FILE="${PROJECT_ROOT}/${PRIVATE_ENV_FILE}"
+fi
+
+set +x
+if [[ -f "$PUBLIC_ENV_FILE" ]]; then
   set -a
-  . "$ENV_FILE"
+  . "$PUBLIC_ENV_FILE"
   set +a
 elif [[ "$DRY_RUN" != "true" ]]; then
-  echo "Missing ${ENV_FILE}. Copy the matching example file and add credentials."
+  echo "Missing ${PUBLIC_ENV_FILE}. Copy the matching public example file."
+  exit 1
+fi
+if [[ "$DRY_RUN" != "true" && -f "$PRIVATE_ENV_FILE" ]]; then
+  set -a
+  . "$PRIVATE_ENV_FILE"
+  set +a
+elif [[ "$DRY_RUN" != "true" ]]; then
+  echo "Missing ${PRIVATE_ENV_FILE}. Copy .env.private.example and add credentials."
   exit 1
 fi
 
-LIVE_ENDPOINT="https://api.explorer.provable.com/v1"
+LIVE_ENDPOINT="https://api.explorer.provable.com/v2"
 DEV_ADMIN="aleo1rhgdu77hgyqd3xjj8ucu3jj9r2krwz6mnzyd80gncr5fxcwlh5rsvzp9px"
 
 case "$NETWORK_NAME" in
@@ -60,25 +74,28 @@ case "$NETWORK_NAME" in
     ENDPOINT="${ENDPOINT:-http://localhost:3030}"
     API_NETWORK="${API_NETWORK:-testnet}"
     PROTOCOL_ADMIN="${PROTOCOL_ADMIN:-$DEV_ADMIN}"
+    PRIVATE_KEY="${DEVNET_PRIVATE_KEY:-}"
     LEO_NETWORK="testnet"
     ;;
   testnet)
     ENDPOINT="${TESTNET_ENDPOINT:-${ENDPOINT:-$LIVE_ENDPOINT}}"
     API_NETWORK="testnet"
     PROTOCOL_ADMIN="${PROTOCOL_ADMIN:-}"
+    PRIVATE_KEY="${TESTNET_PRIVATE_KEY:-}"
     LEO_NETWORK="testnet"
     ;;
   mainnet)
     ENDPOINT="${MAINNET_ENDPOINT:-${ENDPOINT:-$LIVE_ENDPOINT}}"
     API_NETWORK="mainnet"
     PROTOCOL_ADMIN="${PROTOCOL_ADMIN:-}"
+    PRIVATE_KEY="${MAINNET_PRIVATE_KEY:-}"
     LEO_NETWORK="mainnet"
     ;;
 esac
 
 if [[ "$DRY_RUN" != "true" ]]; then
   if [[ -z "${PRIVATE_KEY:-}" || -z "$PROTOCOL_ADMIN" ]]; then
-    echo "PRIVATE_KEY and PROTOCOL_ADMIN are required for a broadcast deployment."
+    echo "The target-network private key in .env.private and PROTOCOL_ADMIN are required."
     exit 1
   fi
   if [[ ! "$PROTOCOL_ADMIN" =~ '^aleo1[a-z0-9]{58}$' ]]; then
@@ -204,24 +221,46 @@ COMMON_ARGS=(
 run_checked() {
   local step_name="$1"
   local success_marker="$2"
-  shift 2
+  local expected_transaction_type="$3"
+  shift 3
   local command_output
   local command_exit
   set +e
   command_output="$("$@" 2>&1)"
   command_exit=$?
   set -e
-  echo "$command_output"
-  if (( command_exit != 0 )); then
-    echo "${step_name} failed with exit code ${command_exit}."
-    exit "$command_exit"
+  printf '%s\n' "$command_output" |
+    sed -E 's/APrivateKey1[[:alnum:]]+/[REDACTED]/g'
+  if (( command_exit == 0 )) &&
+    [[ "$command_output" != *"Could not find the transaction."* ]] &&
+    [[ "$command_output" == *"$success_marker"* ]]; then
+    echo "${step_name} confirmed."
+    return 0
   fi
-  if [[ "$command_output" == *"Could not find the transaction."* || "$command_output" != *"$success_marker"* ]]; then
-    echo "${step_name} did not receive the required confirmation marker: ${success_marker}"
-    exit 1
+
+  local transaction_id
+  local transaction_body
+  transaction_id="$(
+    printf '%s\n' "$command_output" |
+      rg -o 'at1[a-z0-9]+' |
+      head -1 ||
+      true
+  )"
+  if [[ -n "$transaction_id" ]]; then
+    transaction_body="$(
+      curl -fsS "${ENDPOINT}/${API_NETWORK}/transaction/${transaction_id}" ||
+        true
+    )"
+  else
+    transaction_body=""
   fi
-  echo "${step_name} confirmed."
-  return 0
+  if [[ "$transaction_body" == *"\"type\": \"${expected_transaction_type}\""* ]]; then
+    echo "${step_name} verified through the accepted transaction endpoint (${transaction_id})."
+    return 0
+  fi
+
+  echo "${step_name} failed (exit ${command_exit}); no accepted ${expected_transaction_type} transaction was found."
+  exit 1
 }
 
 DEPLOY_ACTION=""
@@ -236,12 +275,14 @@ deploy_or_upgrade() {
     run_checked \
       "Upgrade ${program_id}" \
       "Upgrade confirmed!" \
+      deploy \
       leo upgrade "${COMMON_ARGS[@]}" --path "$package_path" "$@"
   elif [[ "$http_code" == "404" ]]; then
     DEPLOY_ACTION="deploy"
     run_checked \
       "Deploy ${program_id}" \
       "Deployment confirmed!" \
+      deploy \
       leo deploy "${COMMON_ARGS[@]}" --path "$package_path" "$@"
   else
     echo "Unable to determine ${program_id} state at ${ENDPOINT} (HTTP ${http_code})."
@@ -256,25 +297,55 @@ initialize_program() {
   run_checked \
     "Initialize ${program_name}" \
     "Execution confirmed!" \
+    execute \
     leo execute initialize "${COMMON_ARGS[@]}" --path "$package_path"
+}
+
+mapping_value() {
+  local program_id="$1"
+  local mapping_name="$2"
+  local mapping_key="$3"
+  curl -fsS \
+    "${ENDPOINT}/${API_NETWORK}/program/${program_id}/mapping/${mapping_name}/${mapping_key}" ||
+    true
+}
+
+ensure_initialized() {
+  local program_id="$1"
+  local package_path="$2"
+  local mapping_program="$3"
+  local mapping_name="$4"
+  local mapping_key="$5"
+  local current_value
+  current_value="$(mapping_value "$mapping_program" "$mapping_name" "$mapping_key")"
+  if [[ -n "$current_value" && "$current_value" != "null" && "$current_value" != '"null"' ]]; then
+    echo "${program_id} is already initialized; skipping initialize."
+    return 0
+  fi
+  initialize_program "$program_id" "$package_path"
 }
 
 if [[ "$NETWORK_NAME" == "devnet" ]]; then
   echo "Checking local token_registry.aleo..."
   deploy_or_upgrade token_registry.aleo "$DEPLOY_ROOT/contracts/token-registry-workaround"
-  if [[ "$DEPLOY_ACTION" == "deploy" ]]; then
-    initialize_program token_registry.aleo "$DEPLOY_ROOT/contracts/token-registry-workaround"
-  fi
+  ensure_initialized \
+    token_registry.aleo \
+    "$DEPLOY_ROOT/contracts/token-registry-workaround" \
+    token_registry.aleo \
+    registered_tokens \
+    3443843282313283355522573239085696902919850365217539366784739393210722344986field
 fi
 
 deploy_or_upgrade \
   dark_optimistic_oracle.aleo \
   "$DEPLOY_ROOT/contracts/oracle" \
   --skip token_registry.aleo
-ORACLE_ACTION="$DEPLOY_ACTION"
-if [[ "$ORACLE_ACTION" == "deploy" ]]; then
-  initialize_program dark_optimistic_oracle.aleo "$DEPLOY_ROOT/contracts/oracle"
-fi
+ensure_initialized \
+  dark_optimistic_oracle.aleo \
+  "$DEPLOY_ROOT/contracts/oracle" \
+  dark_optimistic_oracle.aleo \
+  fee_collector \
+  0u8
 
 deploy_or_upgrade \
   doo_prediction_market.aleo \

@@ -9,7 +9,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-ENDPOINT="${ALEO_TEST_ENDPOINT:-https://api.explorer.provable.com/v1}"
+ENDPOINT="${ALEO_TEST_ENDPOINT:-https://api.explorer.provable.com/v2}"
 
 leo --home "$TEST_HOME" test \
   --network testnet \

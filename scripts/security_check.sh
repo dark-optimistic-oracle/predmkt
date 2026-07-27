@@ -5,16 +5,9 @@ SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_ROOT"
 
-if grep -R -n -E 'APrivateKey1[a-zA-Z0-9]{20,}' \
-  --exclude='pnpm-lock.yaml' \
-  --exclude='SECURITY.md' \
-  --exclude-dir='.git' \
-  --exclude-dir='.aleo' \
-  --exclude-dir='.toolhome' \
-  --exclude-dir='build' \
-  --exclude-dir='dist' \
-  --exclude-dir='node_modules' \
-  .; then
+if git grep -n -E 'APrivateKey1[a-zA-Z0-9]{20,}' -- \
+  ':!pnpm-lock.yaml' \
+  ':!SECURITY.md'; then
   echo "Potential Aleo private key found in tracked project files."
   exit 1
 fi

@@ -129,9 +129,22 @@ The deployment scripts copy the contracts to a temporary directory and substitut
 
 ### Local devnet
 
-Start a compatible local Aleo devnet, copy `.env.devnet.example` to `.env.devnet`, add a funded local key and matching address, then run:
+Start the Leo-managed local Aleo devnet from `../core`. On the first run,
+`--install` asks Leo to build its compatible snarkOS binary with the
+`test_network` feature; do not substitute an unrelated global snarkOS version:
 
 ```bash
+cd ../core
+./run_node.sh --install
+```
+
+In another terminal, copy `.env.devnet.example` to `.env.devnet` and
+`.env.private.example` to the ignored `.env.private`. Set the matching public
+administrator in `.env.devnet`, keep the local key under `DEVNET_PRIVATE_KEY`,
+and restrict the secret file before running:
+
+```bash
+chmod 600 .env.private
 ./deploy_local_devnet.sh --dry-run
 ./deploy_local_devnet.sh
 ```
@@ -144,10 +157,15 @@ pnpm test:integration:local
 ```
 
 It creates a market, waits past betting, creates a post-close oracle assertion, waits through the grace period, settles YES, redeems the complete winning supply, and verifies that the collateral pool reaches zero.
+The integration runner observes the ledger height directly instead of assuming
+that an external block-advance helper is supported by every snarkOS build. It
+also distinguishes accepted executions from rejected fee-only transactions.
 
 ### Testnet
 
-Copy `.env.testnet.example` to `.env.testnet`, add a funded Testnet key and matching secure administrator, then run:
+Copy `.env.testnet.example` to `.env.testnet`, set its matching secure public
+administrator, and put the funded key in `TESTNET_PRIVATE_KEY` inside the same
+ignored `.env.private`. Then run:
 
 ```bash
 ./deploy_testnet.sh --dry-run
@@ -164,7 +182,11 @@ Mainnet support is present but intentionally locked. A dry run is safe:
 ./deploy_mainnet.sh --dry-run
 ```
 
-An actual broadcast requires `.env.mainnet`, the exact confirmation value documented in its example, and an explicit `--confirm-mainnet` argument. Do not use it until deployment parameters, administrator custody, live-network integration tests, and an independent audit are complete.
+An actual broadcast requires `.env.mainnet`, `MAINNET_PRIVATE_KEY` in
+`.env.private`, the exact confirmation value documented in the public example,
+and an explicit `--confirm-mainnet` argument. Do not use it until deployment
+parameters, administrator custody, live-network integration tests, and an
+independent audit are complete.
 
 ## GitHub Pages
 
