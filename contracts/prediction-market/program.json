@@ -1,0 +1,27 @@
+{
+  "program": "doo_prediction_market.aleo",
+  "version": "0.1.0",
+  "description": "Prediction market settled by Dark Optimistic Oracle assertions",
+  "license": "Apache 2.0",
+  "leo": "4.3.4",
+  "dependencies": [
+    {
+      "name": "credits.aleo",
+      "location": "network",
+      "network": "testnet",
+      "path": null
+    },
+    {
+      "name": "dark_optimistic_oracle.aleo",
+      "location": "local",
+      "network": null,
+      "path": "../oracle"
+    },
+    {
+      "name": "token_registry.aleo",
+      "location": "network",
+      "network": "testnet",
+      "path": null
+    }
+  ]
+}
