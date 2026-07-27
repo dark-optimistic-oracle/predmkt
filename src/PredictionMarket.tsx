@@ -25,10 +25,10 @@ import {
 import {
   MARKET_PROGRAM_ID,
   ORACLE_PROGRAM_ID,
-  TESTNET_API_URL,
   TRANSACTION_FEE,
   asciiToU128,
   extractBlockHeight,
+  fetchTestnet,
   normalizeRecord,
   readMapping,
   textToField,
@@ -148,9 +148,9 @@ export default function PredictionMarket() {
 
     const loadNetwork = async () => {
       const [heightResponse, oracleResponse, marketResponse] = await Promise.all([
-        fetch(`${TESTNET_API_URL}/testnet/latest/height`),
-        fetch(`${TESTNET_API_URL}/testnet/program/${ORACLE_PROGRAM_ID}`),
-        fetch(`${TESTNET_API_URL}/testnet/program/${MARKET_PROGRAM_ID}`),
+        fetchTestnet('/testnet/block/height/latest'),
+        fetchTestnet(`/testnet/program/${ORACLE_PROGRAM_ID}`),
+        fetchTestnet(`/testnet/program/${MARKET_PROGRAM_ID}`),
       ]);
       if (!heightResponse.ok) throw new Error('Aleo Testnet is not responding.');
       const nextHeight = Number(await heightResponse.json());

@@ -173,6 +173,13 @@ ignored `.env.private`. Then run:
 ```
 
 The script requires the canonical public token registry, skips the local workaround, and deploys missing custom programs or performs administrator-authorized upgrades.
+If a coordinated deployment was interrupted only after an accepted transaction,
+rerun it with `--resume`; existing programs are then verified and skipped rather
+than upgraded unnecessarily.
+
+The oracle and prediction market are now deployed on Testnet. Their accepted
+transactions, deterministic program addresses, administrator, funding relay,
+and local-devnet roles are recorded in [DEPLOYMENTS.md](DEPLOYMENTS.md).
 
 ### Mainnet
 
@@ -196,6 +203,9 @@ In the repository settings, select **GitHub Actions** as the Pages source. Jekyl
 
 ## Demonstration status
 
-The public client fails closed when either Testnet program is unavailable: documentation and source remain accessible, but transaction buttons are disabled. Deploy the programs with a secure administrator before treating the hosted interface as live.
+Both Testnet programs are deployed at edition `0`. The public client still
+fails closed when neither official API provider can verify a required program:
+documentation and source remain accessible, but transaction buttons are
+disabled.
 
 This software is a Testnet demonstration. An internal engineering security review and its residual risks are documented in [SECURITY.md](SECURITY.md); it is not an independent audit or formal verification.

@@ -37,6 +37,9 @@ kept synchronized with `../core/src/main.leo`.
   site suitable for GitHub Pages.
 - Added fail-closed program availability checks and explicit Aleo input
   formatting.
+- Added read-only fallback between Provable's two official `/v2` API hosts so
+  temporary propagation differences do not incorrectly mark an accepted
+  deployment unavailable. Custom and local endpoints remain single-provider.
 
 ## Configuration and credentials
 
@@ -97,10 +100,24 @@ schedule through height 20. The ignored local binary is only a compatible
 fallback when the macOS Xcode `libclang` runtime prevents Leo's installer from
 completing.
 
-The public Testnet programs are not yet deployed. The account currently has
-`9.49` credits, while the oracle deployment alone is estimated at `26.954929`
-credits. Additional faucet credits are required before the oracle,
-initialization transaction, and prediction market can be broadcast.
+The public Testnet deployment completed successfully:
+
+- `dark_optimistic_oracle.aleo`: edition `0`, initialized against canonical
+  `token_registry.aleo`.
+- `doo_prediction_market.aleo`: edition `0`.
+- Shared dedicated administrator and oracle fee collector:
+  `aleo1a2k4a9phy4kklx2ad0aed0lgvyzaegf0gfp85uldzhjzn8tt05zsjmfjnf`.
+
+Accepted transaction IDs, deterministic program addresses, current post-deploy
+balances, and devnet address roles are in [DEPLOYMENTS.md](DEPLOYMENTS.md).
+`--resume` now supports safe continuation after an accepted partial deployment,
+and public program detection falls back to the latest-edition route when a
+provider's full-program route is briefly behind.
+
+The final production build was tested in a browser against Testnet. The page
+reported both programs as ready, loaded the current block height, switched
+between lifecycle tabs, and emitted no browser warnings or errors. Wallet
+signing remains an interactive Shield approval and was not automated.
 
 Mainnet remains intentionally locked behind both an explicit command argument
 and a public confirmation value.

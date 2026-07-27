@@ -64,22 +64,19 @@ describe('Aleo hashing and API parsing', () => {
     expect(extractBlockHeight('{ id: 1field }', 'betting_deadline_block_height')).toBeNull();
   });
 
-  it('returns mapping values, maps 404 to null, and rejects other errors', async () => {
-    const fetchMock = vi
-      .fn()
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => '42u128',
-      })
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 404,
-      })
-      .mockResolvedValueOnce({
-        ok: false,
-        status: 503,
-      });
+  it('returns mapping values, falls back between official APIs, and rejects errors', async () => {
+    const fetchMock = vi.fn(async (input: string | URL | Request) => {
+      const url = String(input);
+      if (url.endsWith('/1field')) {
+        return { ok: true, status: 200, json: async () => '42u128' };
+      }
+      if (url.endsWith('/2field')) return { ok: false, status: 404 };
+      if (url.endsWith('/3field')) return { ok: false, status: 503 };
+      if (url.endsWith('/4field') && url.startsWith('https://api.provable.com/')) {
+        return { ok: false, status: 404 };
+      }
+      return { ok: true, status: 200, json: async () => '7u128' };
+    });
     vi.stubGlobal('fetch', fetchMock);
 
     await expect(readMapping('program.aleo', 'values', '1field')).resolves.toBe('42u128');
@@ -87,5 +84,6 @@ describe('Aleo hashing and API parsing', () => {
     await expect(readMapping('program.aleo', 'values', '3field')).rejects.toThrow(
       /Unable to read values \(503\)/,
     );
+    await expect(readMapping('program.aleo', 'values', '4field')).resolves.toBe('7u128');
   });
 });

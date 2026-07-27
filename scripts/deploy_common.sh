@@ -7,7 +7,7 @@ NETWORK_NAME="${1:-}"
 shift || true
 
 usage() {
-  echo "Usage: deploy_{local_devnet|testnet|mainnet}.sh [--dry-run] [--confirm-mainnet]"
+  echo "Usage: deploy_{local_devnet|testnet|mainnet}.sh [--dry-run] [--resume] [--confirm-mainnet]"
   echo "Set PUBLIC_ENV_FILE or PRIVATE_ENV_FILE to override the default environment files."
 }
 
@@ -17,6 +17,7 @@ if [[ "$NETWORK_NAME" != "devnet" && "$NETWORK_NAME" != "testnet" && "$NETWORK_N
 fi
 
 DRY_RUN=false
+RESUME=false
 CONFIRM_MAINNET=false
 for argument in "$@"; do
   case "$argument" in
@@ -25,6 +26,9 @@ for argument in "$@"; do
       ;;
     --confirm-mainnet)
       CONFIRM_MAINNET=true
+      ;;
+    --resume)
+      RESUME=true
       ;;
     --help|-h)
       usage
@@ -66,7 +70,7 @@ elif [[ "$DRY_RUN" != "true" ]]; then
   exit 1
 fi
 
-LIVE_ENDPOINT="https://api.explorer.provable.com/v2"
+LIVE_ENDPOINT="https://api.provable.com/v2"
 DEV_ADMIN="aleo1rhgdu77hgyqd3xjj8ucu3jj9r2krwz6mnzyd80gncr5fxcwlh5rsvzp9px"
 
 case "$NETWORK_NAME" in
@@ -167,6 +171,19 @@ program_status() {
     echo "404"
     return
   fi
+  if [[ "$NETWORK_NAME" != "devnet" && "$response_code" == "404" ]]; then
+    local edition_code
+    local edition_value
+    edition_code="$(
+      curl -sS -o "$response_body" -w '%{http_code}' --connect-timeout 5 --max-time 20 \
+        "${ENDPOINT}/${API_NETWORK}/program/${program_id}/latest_edition"
+    )" || edition_code="000"
+    edition_value="$(<"$response_body")"
+    if [[ "$edition_code" == "200" && "$edition_value" == <-> ]]; then
+      echo "200"
+      return
+    fi
+  fi
   echo "$response_code"
 }
 
@@ -184,7 +201,11 @@ if [[ "$NETWORK_NAME" == "devnet" && "$DRY_RUN" == "true" ]]; then
   # A dry run validates source without requiring a running local node.
   BUILD_ENDPOINT="$LIVE_ENDPOINT"
 fi
-for contract_name in token-registry-workaround oracle prediction-market; do
+contracts_to_build=(oracle prediction-market)
+if [[ "$NETWORK_NAME" == "devnet" ]]; then
+  contracts_to_build=(token-registry-workaround oracle prediction-market)
+fi
+for contract_name in "${contracts_to_build[@]}"; do
   leo --home "$DEPLOY_ROOT/.aleo" build \
     --network "$LEO_NETWORK" \
     --endpoint "$BUILD_ENDPOINT" \
@@ -225,10 +246,24 @@ run_checked() {
   shift 3
   local command_output
   local command_exit
-  set +e
-  command_output="$("$@" 2>&1)"
-  command_exit=$?
-  set -e
+  local attempt=1
+  local max_attempts=3
+  while true; do
+    set +e
+    command_output="$("$@" 2>&1)"
+    command_exit=$?
+    set -e
+    if (( command_exit != 0 && attempt < max_attempts )) &&
+      [[ "$command_output" == *"/stateRoot/latest"* ]] &&
+      [[ "$command_output" == *"Failed to fetch"* ]] &&
+      [[ "$command_output" != *"Broadcasted transaction"* ]]; then
+      echo "${step_name} hit a transient state-root fetch failure; retrying ($((attempt + 1))/${max_attempts})."
+      attempt=$((attempt + 1))
+      sleep 2
+      continue
+    fi
+    break
+  done
   printf '%s\n' "$command_output" |
     sed -E 's/APrivateKey1[[:alnum:]]+/[REDACTED]/g'
   if (( command_exit == 0 )) &&
@@ -240,6 +275,7 @@ run_checked() {
 
   local transaction_id
   local transaction_body
+  local verification_attempt
   transaction_id="$(
     printf '%s\n' "$command_output" |
       rg -o 'at1[a-z0-9]+' |
@@ -247,10 +283,17 @@ run_checked() {
       true
   )"
   if [[ -n "$transaction_id" ]]; then
-    transaction_body="$(
-      curl -fsS "${ENDPOINT}/${API_NETWORK}/transaction/${transaction_id}" ||
-        true
-    )"
+    transaction_body=""
+    for verification_attempt in {1..15}; do
+      transaction_body="$(
+        curl -fsS "${ENDPOINT}/${API_NETWORK}/transaction/${transaction_id}" ||
+          true
+      )"
+      if [[ "$transaction_body" == *"\"type\": \"${expected_transaction_type}\""* ]]; then
+        break
+      fi
+      sleep 2
+    done
   else
     transaction_body=""
   fi
@@ -263,6 +306,21 @@ run_checked() {
   exit 1
 }
 
+wait_for_program() {
+  local program_id="$1"
+  local program_http_code
+  local attempt
+  for attempt in {1..30}; do
+    program_http_code="$(program_status "$program_id")"
+    if [[ "$program_http_code" == "200" ]]; then
+      return
+    fi
+    sleep 2
+  done
+  echo "${program_id} was accepted but did not become queryable at ${ENDPOINT}."
+  exit 1
+}
+
 DEPLOY_ACTION=""
 deploy_or_upgrade() {
   local program_id="$1"
@@ -271,12 +329,17 @@ deploy_or_upgrade() {
   local http_code
   http_code="$(program_status "$program_id")"
   if [[ "$http_code" == "200" ]]; then
-    DEPLOY_ACTION="upgrade"
-    run_checked \
-      "Upgrade ${program_id}" \
-      "Upgrade confirmed!" \
-      deploy \
-      leo upgrade "${COMMON_ARGS[@]}" --path "$package_path" "$@"
+    if [[ "$RESUME" == "true" ]]; then
+      DEPLOY_ACTION="skip"
+      echo "${program_id} already exists; --resume skips an unnecessary upgrade."
+    else
+      DEPLOY_ACTION="upgrade"
+      run_checked \
+        "Upgrade ${program_id}" \
+        "Upgrade confirmed!" \
+        deploy \
+        leo upgrade "${COMMON_ARGS[@]}" --path "$package_path" "$@"
+    fi
   elif [[ "$http_code" == "404" ]]; then
     DEPLOY_ACTION="deploy"
     run_checked \
@@ -284,6 +347,7 @@ deploy_or_upgrade() {
       "Deployment confirmed!" \
       deploy \
       leo deploy "${COMMON_ARGS[@]}" --path "$package_path" "$@"
+    wait_for_program "$program_id"
   else
     echo "Unable to determine ${program_id} state at ${ENDPOINT} (HTTP ${http_code})."
     exit 1
@@ -294,11 +358,19 @@ deploy_or_upgrade() {
 initialize_program() {
   local program_name="$1"
   local package_path="$2"
-  run_checked \
-    "Initialize ${program_name}" \
-    "Execution confirmed!" \
-    execute \
-    leo execute initialize "${COMMON_ARGS[@]}" --path "$package_path"
+  if [[ "$NETWORK_NAME" == "devnet" ]]; then
+    run_checked \
+      "Initialize ${program_name}" \
+      "Execution confirmed!" \
+      execute \
+      leo execute initialize "${COMMON_ARGS[@]}" --path "$package_path"
+  else
+    run_checked \
+      "Initialize ${program_name}" \
+      "Execution confirmed!" \
+      execute \
+      leo execute "${program_name}::initialize" "${COMMON_ARGS[@]}" --no-local
+  fi
 }
 
 mapping_value() {

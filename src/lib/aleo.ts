@@ -1,8 +1,37 @@
 export const ORACLE_PROGRAM_ID = 'dark_optimistic_oracle.aleo';
 export const MARKET_PROGRAM_ID = 'doo_prediction_market.aleo';
 export const TESTNET_API_URL =
-  import.meta.env.VITE_ALEO_API_URL ?? 'https://api.explorer.provable.com/v2';
+  import.meta.env.VITE_ALEO_API_URL ?? 'https://api.provable.com/v2';
 export const TRANSACTION_FEE = 1_000_000;
+
+const OFFICIAL_TESTNET_APIS = [
+  'https://api.provable.com/v2',
+  'https://api.explorer.provable.com/v2',
+];
+
+function testnetApiCandidates() {
+  if (!OFFICIAL_TESTNET_APIS.includes(TESTNET_API_URL)) return [TESTNET_API_URL];
+  return [
+    TESTNET_API_URL,
+    ...OFFICIAL_TESTNET_APIS.filter((endpoint) => endpoint !== TESTNET_API_URL),
+  ];
+}
+
+export async function fetchTestnet(path: string) {
+  let lastResponse: Response | null = null;
+  let lastError: unknown;
+  for (const endpoint of testnetApiCandidates()) {
+    try {
+      const response = await fetch(`${endpoint}${path}`);
+      if (response.ok) return response;
+      lastResponse = response;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+  if (lastResponse) return lastResponse;
+  throw lastError instanceof Error ? lastError : new Error('Aleo Testnet is not responding.');
+}
 
 const FIELD_MODULUS =
   8444461749428370424248824938781546531375899335154063827935233455917409239041n;
@@ -71,8 +100,8 @@ export async function readMapping(
   mapping: string,
   key: string,
 ) {
-  const response = await fetch(
-    `${TESTNET_API_URL}/testnet/program/${program}/mapping/${mapping}/${encodeURIComponent(key)}`,
+  const response = await fetchTestnet(
+    `/testnet/program/${program}/mapping/${mapping}/${encodeURIComponent(key)}`,
   );
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Unable to read ${mapping} (${response.status}).`);
