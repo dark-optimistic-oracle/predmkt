@@ -28,7 +28,7 @@ The design relies on these trust assumptions:
 | Wallet integration | Shield is the configured wallet adapter. Tests verify every transaction family constructed by the UI. Final authorization and proof generation remain wallet responsibilities. |
 | Aleo integrations | Public deployment requires the canonical registry to exist. Settlement calls the oracle verifier and binds assertion ID, market ID, claim hash, market close height, and expected validity. |
 | Deployment | Separate devnet, Testnet, and locked Mainnet entry points; no embedded keys; key/admin matching; temporary administrator substitution; deploy-or-upgrade detection; confirmation-marker checks; canonical public registry checks; and dry-run compilation. |
-| GitHub Pages and dependencies | CI runs lint, browser-unit/lifecycle tests, static security checks, and a production build. Direct Provable wallet packages are version-pinned and the lockfile is frozen in CI. |
+| GitHub Pages and dependencies | CI runs lint, browser-unit/lifecycle tests, static security checks, and a production build. Direct Provable wallet packages are version-pinned, the lockfile is frozen, and GitHub Actions are pinned to full commit SHAs. |
 
 ## Findings and disposition
 

@@ -1,8 +1,8 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="${0:A:h}"
-PROJECT_ROOT="${SCRIPT_DIR:h}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 cd "$PROJECT_ROOT"
 
 if rg -n 'APrivateKey1[a-zA-Z0-9]{20,}' \
@@ -43,6 +43,11 @@ fi
 
 if ! rg -q 'pnpm test' .github/workflows/pages.yml; then
   echo "GitHub Pages workflow does not run the test suite."
+  exit 1
+fi
+
+if rg -q 'uses:\s+[^[:space:]#]+@v[0-9]' .github/workflows/pages.yml; then
+  echo "GitHub Actions dependencies must be pinned to full commit SHAs."
   exit 1
 fi
 
