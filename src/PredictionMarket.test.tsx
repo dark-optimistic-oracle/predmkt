@@ -35,6 +35,7 @@ describe('PredictionMarket', () => {
   });
 
   it('creates two token-registry outcome assets with neutral collateral', async () => {
+    const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined);
     render(<PredictionMarket />);
 
     fireEvent.click(screen.getByRole('button', { name: /create market/i }));
@@ -52,6 +53,32 @@ describe('PredictionMarket', () => {
         ],
       }),
     );
+    const auditEntries = consoleSpy.mock.calls
+      .filter(([prefix]) => prefix === '[Aleo audit]')
+      .map(([, entry]) => JSON.parse(String(entry)));
+    expect(auditEntries).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        phase: 'request',
+        kind: 'transaction',
+        program: 'doo_prediction_market.aleo',
+        function: 'create_market',
+        parameters: expect.objectContaining({
+          caller: walletState.address,
+          inputs: [
+            expect.objectContaining({ position: 0, name: 'market' }),
+            expect.objectContaining({ position: 1, name: 'initial_liquidity', value: '1000000u64' }),
+          ],
+          fee: 1_000_000,
+          privateFee: false,
+        }),
+      }),
+      expect.objectContaining({
+        phase: 'submitted',
+        function: 'create_market',
+        result: { transactionId: 'mock_transaction' },
+      }),
+    ]));
+    consoleSpy.mockRestore();
   });
 
   it('mints the selected outcome token without spending DOOR', async () => {
@@ -107,6 +134,7 @@ describe('PredictionMarket', () => {
   });
 
   it('supports the full dispute and private-vote transaction path', async () => {
+    const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined);
     render(<PredictionMarket />);
     fireEvent.click(screen.getByRole('tab', { name: /review/i }));
 
@@ -149,6 +177,23 @@ describe('PredictionMarket', () => {
         }),
       ),
     );
+
+    const privateAuditEntries = consoleSpy.mock.calls
+      .filter(([prefix]) => prefix === '[Aleo audit]')
+      .map(([, entry]) => JSON.parse(String(entry)))
+      .filter((entry) => entry.phase === 'request' && ['new_voting_right', 'deny'].includes(entry.function));
+    expect(JSON.stringify(privateAuditEntries)).not.toContain('aleo1private');
+    expect(privateAuditEntries).toHaveLength(2);
+    expect(privateAuditEntries[0].parameters.inputs[0].value).toEqual(expect.objectContaining({
+      redacted: true,
+      classification: 'private Aleo record',
+      sha256: expect.stringMatching(/^[0-9a-f]{64}$/),
+    }));
+    expect(privateAuditEntries[1].parameters.inputs[0].value).toEqual(expect.objectContaining({
+      redacted: true,
+      sha256: expect.stringMatching(/^[0-9a-f]{64}$/),
+    }));
+    consoleSpy.mockRestore();
   });
 
   it('passes the market close height into oracle-gated settlement', async () => {

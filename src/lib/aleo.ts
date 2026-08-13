@@ -1,3 +1,10 @@
+import {
+  beginAleoCall,
+  completeAleoCall,
+  failAleoCall,
+  type AleoAuditCall,
+} from './aleoAudit';
+
 export const ORACLE_PROGRAM_ID = 'dark_optimistic_oracle.aleo';
 export const MARKET_PROGRAM_ID = 'doo_prediction_market.aleo';
 export const TESTNET_API_URL =
@@ -17,15 +24,33 @@ function testnetApiCandidates() {
   ];
 }
 
-export async function fetchTestnet(path: string) {
+export async function fetchTestnet(
+  path: string,
+  call: Omit<AleoAuditCall, 'kind' | 'network'>,
+) {
   let lastResponse: Response | null = null;
   let lastError: unknown;
   for (const endpoint of testnetApiCandidates()) {
+    const url = `${endpoint}${path}`;
+    const audit = beginAleoCall({
+      kind: 'read',
+      network: 'testnet',
+      ...call,
+      parameters: {
+        ...call.parameters,
+        httpMethod: 'GET',
+        url,
+      },
+    });
     try {
-      const response = await fetch(`${endpoint}${path}`);
+      const response = await fetch(url);
+      completeAleoCall(audit, 'response', {
+        result: { httpStatus: response.status, ok: response.ok },
+      });
       if (response.ok) return response;
       lastResponse = response;
     } catch (error) {
+      failAleoCall(audit, error);
       lastError = error;
     }
   }
@@ -102,6 +127,12 @@ export async function readMapping(
 ) {
   const response = await fetchTestnet(
     `/testnet/program/${program}/mapping/${mapping}/${encodeURIComponent(key)}`,
+    {
+      description: `Read ${program}.${mapping}[${key}]`,
+      program,
+      function: 'get_mapping_value',
+      parameters: { mapping, key },
+    },
   );
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Unable to read ${mapping} (${response.status}).`);

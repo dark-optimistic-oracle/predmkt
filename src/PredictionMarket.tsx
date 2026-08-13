@@ -37,6 +37,7 @@ import {
   toU32,
   toU64,
 } from './lib/aleo';
+import { beginAleoCall, completeAleoCall, failAleoCall, formatAleoAuditInputs } from './lib/aleoAudit';
 
 type Stage = 'trade' | 'report' | 'challenge' | 'settle';
 type Notice = { type: 'success' | 'error'; message: string };
@@ -148,9 +149,23 @@ export default function PredictionMarket() {
 
     const loadNetwork = async () => {
       const [heightResponse, oracleResponse, marketResponse] = await Promise.all([
-        fetchTestnet('/testnet/block/height/latest'),
-        fetchTestnet(`/testnet/program/${ORACLE_PROGRAM_ID}`),
-        fetchTestnet(`/testnet/program/${MARKET_PROGRAM_ID}`),
+        fetchTestnet('/testnet/block/height/latest', {
+          description: 'Read the latest Aleo Testnet block height',
+          function: 'get_latest_block_height',
+          parameters: {},
+        }),
+        fetchTestnet(`/testnet/program/${ORACLE_PROGRAM_ID}`, {
+          description: `Read deployed program ${ORACLE_PROGRAM_ID}`,
+          program: ORACLE_PROGRAM_ID,
+          function: 'get_program',
+          parameters: { programId: ORACLE_PROGRAM_ID },
+        }),
+        fetchTestnet(`/testnet/program/${MARKET_PROGRAM_ID}`, {
+          description: `Read deployed program ${MARKET_PROGRAM_ID}`,
+          program: MARKET_PROGRAM_ID,
+          function: 'get_program',
+          parameters: { programId: MARKET_PROGRAM_ID },
+        }),
       ]);
       if (!heightResponse.ok) throw new Error('Aleo Testnet is not responding.');
       const nextHeight = Number(await heightResponse.json());
@@ -185,7 +200,12 @@ export default function PredictionMarket() {
     [bettingDeadline, disputeDeadline, votingDeadline],
   );
 
-  const run = async (program: string, functionName: string, inputs: string[]) => {
+  const run = async (
+    program: string,
+    functionName: string,
+    inputs: string[],
+    inputNames: string[],
+  ) => {
     if (!connected || !address) {
       setNotice({ type: 'error', message: 'Connect Shield wallet before submitting.' });
       return;
@@ -199,19 +219,39 @@ export default function PredictionMarket() {
       return;
     }
 
+    const request = {
+      program,
+      function: functionName,
+      inputs,
+      fee: TRANSACTION_FEE,
+      privateFee: false,
+    };
+    const auditInputs = await formatAleoAuditInputs(inputs, inputNames);
+    const audit = beginAleoCall({
+      kind: 'transaction',
+      network: 'testnet',
+      description: `Submit ${program}.${functionName}`,
+      program,
+      function: functionName,
+      parameters: {
+        caller: address,
+        inputs: auditInputs,
+        fee: request.fee,
+        privateFee: request.privateFee,
+      },
+    });
+
     try {
-      const result = await executeTransaction({
-        program,
-        function: functionName,
-        inputs,
-        fee: TRANSACTION_FEE,
-        privateFee: false,
+      const result = await executeTransaction(request);
+      completeAleoCall(audit, 'submitted', {
+        result: { transactionId: result?.transactionId ?? null },
       });
       setNotice({
         type: 'success',
         message: `${functionName} submitted. Transaction ${result?.transactionId ?? 'is awaiting wallet confirmation'}.`,
       });
     } catch (error) {
+      failAleoCall(audit, error);
       setNotice({
         type: 'error',
         message: error instanceof Error ? error.message : `Unable to submit ${functionName}.`,
@@ -223,9 +263,10 @@ export default function PredictionMarket() {
     program: string,
     functionName: string,
     buildInputs: () => string[],
+    inputNames: string[],
   ) => {
     try {
-      await run(program, functionName, buildInputs());
+      await run(program, functionName, buildInputs(), inputNames);
     } catch (error) {
       setNotice({
         type: 'error',
@@ -251,7 +292,7 @@ export default function PredictionMarket() {
         betting_deadline_block_height: ${toU32(bettingDeadline)}
       }`,
       toU64(initialLiquidity),
-    ]);
+    ], ['market', 'initial_liquidity']);
 
   const buyPosition = (outcome: boolean) =>
     submit(MARKET_PROGRAM_ID, 'buy_outcome', () => [
@@ -259,7 +300,7 @@ export default function PredictionMarket() {
       String(outcome),
       outcome ? yesTokenId : noTokenId,
       toU64(positionAmount),
-    ]);
+    ], ['market_id', 'outcome', 'outcome_token_id', 'amount']);
 
   const reportOutcome = () =>
     submit(ORACLE_PROGRAM_ID, 'create_assertion', () => [
@@ -272,25 +313,25 @@ export default function PredictionMarket() {
         dispute_deadline_block_height: ${toU32(disputeDeadline)},
         voting_deadline_block_height: ${toU32(votingDeadline)}
       }`,
-    ]);
+    ], ['assertion']);
 
   const dispute = () =>
     submit(ORACLE_PROGRAM_ID, 'dispute_assertion', () => [
       toField(assertionId),
       toU128(assertionCost),
-    ]);
+    ], ['assertion_id', 'assertion_cost']);
 
   const buyVotingRight = () =>
     submit(ORACLE_PROGRAM_ID, 'new_voting_right', () => [
       normalizeRecord(privatePayment, 'Private DOOR payment record'),
       toField(assertionId),
       toU128(voterStake),
-    ]);
+    ], ['payment', 'assertion_id', 'voter_stake']);
 
   const castVote = (outcome: boolean) =>
     submit(ORACLE_PROGRAM_ID, outcome ? 'confirm' : 'deny', () => [
       normalizeRecord(votingRight, 'Private voting-right record'),
-    ]);
+    ], ['voting_right']);
 
   const settle = () =>
     submit(MARKET_PROGRAM_ID, 'settle_market', () => [
@@ -300,6 +341,13 @@ export default function PredictionMarket() {
       reportedOutcome ? yesClaimHash : noClaimHash,
       String(reportedOutcome === settlementOutcome),
       toU32(bettingDeadline),
+    ], [
+      'market_id',
+      'assertion_id',
+      'reported_outcome',
+      'reported_claim_hash',
+      'assertion_valid',
+      'betting_deadline_block_height',
     ]);
 
   const claim = () =>
@@ -308,7 +356,7 @@ export default function PredictionMarket() {
       positionOutcome ? yesTokenId : noTokenId,
       toU128(positionAmount),
       toU64(payoutAmount),
-    ]);
+    ], ['market_id', 'outcome_token_id', 'amount', 'payout_microcredits']);
 
   const loadMarket = async () => {
     setLookupState({ status: 'loading' });

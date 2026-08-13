@@ -104,6 +104,20 @@ pnpm security:audit
 
 The browser suite covers input parsing, API handling, every frontend transaction family, all binary assertion-result combinations, deadline failures, claim binding, payout conservation, rounding, and repeat-redemption rejection. `pnpm test:contracts` runs the Leo unit tests for oracle and market rules. The deployment check compiles all three programs for each target without signing or broadcasting.
 
+### Auditing Aleo calls
+
+Open the browser developer console and filter for `[Aleo audit]`. The site logs
+one JSON request entry and one response, submission, or error entry for every
+frontend-initiated Aleo call. Each entry includes a sequence number and call ID,
+the program and function, all named positional inputs or read parameters, the
+provider URL, fee settings, caller, and transaction ID when Shield returns one.
+
+Private DOOR payment and voting-right record plaintext is never written to the
+console. The audit records the input name, private-record classification,
+plaintext length, and SHA-256 fingerprint so an auditor can correlate calls
+without receiving a spendable record. Private keys are never available to or
+logged by the site.
+
 The production build uses `/predmkt/` as its base path. To preview at the root locally:
 
 ```bash

@@ -65,6 +65,7 @@ describe('Aleo hashing and API parsing', () => {
   });
 
   it('returns mapping values, falls back between official APIs, and rejects errors', async () => {
+    const consoleSpy = vi.spyOn(console, 'info').mockImplementation(() => undefined);
     const fetchMock = vi.fn(async (input: string | URL | Request) => {
       const url = String(input);
       if (url.endsWith('/1field')) {
@@ -85,5 +86,25 @@ describe('Aleo hashing and API parsing', () => {
       /Unable to read values \(503\)/,
     );
     await expect(readMapping('program.aleo', 'values', '4field')).resolves.toBe('7u128');
+
+    const requests = consoleSpy.mock.calls
+      .filter(([prefix]) => prefix === '[Aleo audit]')
+      .map(([, entry]) => JSON.parse(String(entry)))
+      .filter((entry) => entry.phase === 'request' && entry.kind === 'read');
+    expect(requests[0]).toEqual(expect.objectContaining({
+      description: 'Read program.aleo.values[1field]',
+      program: 'program.aleo',
+      function: 'get_mapping_value',
+      parameters: expect.objectContaining({
+        mapping: 'values',
+        key: '1field',
+        httpMethod: 'GET',
+        url: expect.stringContaining('/mapping/values/1field'),
+      }),
+    }));
+    expect(requests.map((entry) => entry.sequence)).toEqual(
+      [...requests.map((entry) => entry.sequence)].sort((a, b) => a - b),
+    );
+    consoleSpy.mockRestore();
   });
 });
