@@ -3,10 +3,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import PredictionMarket from './PredictionMarket';
 
 const executeTransactionMock = vi.fn();
+const transactionStatusMock = vi.fn();
 let walletState = {
   address: 'aleo1mockaddress000000000000000000000000000000000000000000000000',
   connected: true,
   executeTransaction: executeTransactionMock,
+  transactionStatus: transactionStatusMock,
 };
 
 vi.mock('@provablehq/aleo-wallet-adaptor-react', () => ({
@@ -16,11 +18,17 @@ vi.mock('@provablehq/aleo-wallet-adaptor-react', () => ({
 describe('PredictionMarket', () => {
   beforeEach(() => {
     executeTransactionMock.mockReset();
-    executeTransactionMock.mockResolvedValue({ transactionId: 'mock_transaction' });
+    transactionStatusMock.mockReset();
+    executeTransactionMock.mockResolvedValue({ transactionId: 'mock_wallet_request' });
+    transactionStatusMock.mockResolvedValue({
+      status: 'accepted',
+      transactionId: 'at1mock_onchain_transaction',
+    });
     walletState = {
       address: 'aleo1mockaddress000000000000000000000000000000000000000000000000',
       connected: true,
       executeTransaction: executeTransactionMock,
+      transactionStatus: transactionStatusMock,
     };
   });
 
@@ -75,7 +83,17 @@ describe('PredictionMarket', () => {
       expect.objectContaining({
         phase: 'submitted',
         function: 'create_market',
-        result: { transactionId: 'mock_transaction' },
+        result: { walletRequestId: 'mock_wallet_request' },
+      }),
+      expect.objectContaining({
+        phase: 'response',
+        function: 'create_market',
+        result: expect.objectContaining({
+          walletRequestId: 'mock_wallet_request',
+          walletStatus: 'accepted',
+          onchainTransactionId: 'at1mock_onchain_transaction',
+          timedOut: false,
+        }),
       }),
     ]));
     consoleSpy.mockRestore();

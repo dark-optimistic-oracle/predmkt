@@ -38,6 +38,7 @@ import {
   toU64,
 } from './lib/aleo';
 import { beginAleoCall, completeAleoCall, failAleoCall, formatAleoAuditInputs } from './lib/aleoAudit';
+import { waitForWalletTransaction } from './lib/aleoTransactionStatus';
 
 type Stage = 'trade' | 'report' | 'challenge' | 'settle';
 type Notice = { type: 'success' | 'error'; message: string };
@@ -75,7 +76,7 @@ const formatAddress = (address?: string | null) =>
   address ? `${address.slice(0, 10)}…${address.slice(-6)}` : 'Not connected';
 
 export default function PredictionMarket() {
-  const { address, connected, executeTransaction } = useWallet();
+  const { address, connected, executeTransaction, transactionStatus } = useWallet();
   const [stage, setStage] = useState<Stage>('trade');
   const [height, setHeight] = useState<number | null>(import.meta.env.DEV ? 1_000_000 : null);
   const [programs, setPrograms] = useState<Programs>(
@@ -243,12 +244,56 @@ export default function PredictionMarket() {
 
     try {
       const result = await executeTransaction(request);
+      const walletRequestId = result?.transactionId ?? null;
       completeAleoCall(audit, 'submitted', {
-        result: { transactionId: result?.transactionId ?? null },
+        result: { walletRequestId },
       });
+
+      if (!walletRequestId || !transactionStatus) {
+        setNotice({
+          type: 'success',
+          message: `${functionName} submitted, but Shield did not return a trackable request ID.`,
+        });
+        return;
+      }
+
       setNotice({
         type: 'success',
-        message: `${functionName} submitted. Transaction ${result?.transactionId ?? 'is awaiting wallet confirmation'}.`,
+        message: `${functionName} submitted. Wallet request ${walletRequestId}; awaiting Testnet finality.`,
+      });
+
+      const finalStatus = await waitForWalletTransaction(transactionStatus, walletRequestId);
+      const onchainTransactionId = finalStatus.transactionId ?? null;
+      completeAleoCall(audit, 'response', {
+        result: {
+          walletRequestId,
+          walletStatus: finalStatus.status,
+          onchainTransactionId,
+          statusPollAttempts: finalStatus.attempts,
+          timedOut: finalStatus.timedOut,
+          walletError: finalStatus.error ?? null,
+        },
+      });
+
+      if (finalStatus.status.toLowerCase() === 'accepted') {
+        setNotice({
+          type: 'success',
+          message: `${functionName} accepted on Testnet. Transaction ID: ${onchainTransactionId ?? 'not returned by Shield'}.`,
+        });
+        return;
+      }
+
+      if (finalStatus.timedOut) {
+        setNotice({
+          type: 'success',
+          message: `${functionName} is still pending. Wallet request: ${walletRequestId}.`,
+        });
+        return;
+      }
+
+      setNotice({
+        type: 'error',
+        message: `${functionName} ${finalStatus.status}${finalStatus.error ? `: ${finalStatus.error}` : '.'}`,
       });
     } catch (error) {
       failAleoCall(audit, error);

@@ -107,10 +107,14 @@ The browser suite covers input parsing, API handling, every frontend transaction
 ### Auditing Aleo calls
 
 Open the browser developer console and filter for `[Aleo audit]`. The site logs
-one JSON request entry and one response, submission, or error entry for every
+one JSON request entry and one or more response, submission, or error entries for every
 frontend-initiated Aleo call. Each entry includes a sequence number and call ID,
 the program and function, all named positional inputs or read parameters, the
-provider URL, fee settings, caller, and transaction ID when Shield returns one.
+provider URL, fee settings, and caller. For writes, the submission entry labels
+Shield's temporary identifier as `walletRequestId`; the site then polls Shield
+and records the terminal wallet status and real `onchainTransactionId` after
+Testnet accepts the transaction. A pending request is never presented as an
+on-chain transaction ID.
 
 Private DOOR payment and voting-right record plaintext is never written to the
 console. The audit records the input name, private-record classification,
