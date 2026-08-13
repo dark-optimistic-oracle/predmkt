@@ -145,5 +145,35 @@ Provable can represent an absent mapping value as either HTTP 404 or a JSON
 missing state; this prevents a nonexistent oracle assertion or disputer from
 being rendered as the literal string `"null"`.
 
+## Live Testnet browser QA (2026-08-13)
+
+The dedicated public QA account
+`aleo1h3tk7mymrc3a82wn4k2xc6yyjp6esqezg2lmngpscwvwy3xa75xqnmd5th`
+was used through Shield. No wallet secret is stored in this repository.
+
+- Market `187031921field` was created with betting deadline `18703305u32`.
+- The YES and NO token IDs are respectively
+  `3002210804557717497114387731899429818297289214360002865070891917831340783806field`
+  and
+  `2959601667237201281332120192717557075647714352647817374702525943122374138208field`.
+- Initial neutral collateral created 100,000 units of each outcome asset. A
+  subsequent YES purchase produced final pre-settlement supplies of 200,000 YES
+  and 100,000 NO, backed by 300,000 public microcredits.
+- Assertion `187031922field` reports YES with the market-bound claim hash
+  `5324225230327309758036215428934805159243555382598664189792628563485661196146field`.
+  It bonded 100,000,000 public DOOR, uses dispute deadline `18703670u32`, and
+  voting deadline `18703770u32`.
+- Shield request `shield_1786664336595_nes5rpygvt8` finalized as Testnet
+  transaction
+  `at17hqfx3nlfp8tn6trje22yyp67jdjvej8usccnclu9n6x93eg2u8svxjsgk`.
+- Provider mappings confirmed the assertion fields and QA asserter address, no
+  disputer, and the expected QA public DOOR balance change from 250,000,000 to
+  150,000,000 units after bonding.
+
+This evidence validates the connected-wallet reporting path and the browser
+audit distinction between Shield's temporary request ID and the accepted
+on-chain transaction ID. Settlement and redemption evidence is appended as the
+interactive lifecycle proceeds.
+
 Mainnet remains intentionally locked behind both an explicit command argument
 and a public confirmation value.

@@ -122,6 +122,15 @@ plaintext length, and SHA-256 fingerprint so an auditor can correlate calls
 without receiving a spendable record. Private keys are never available to or
 logged by the site.
 
+### Live Testnet QA
+
+The browser workflow has been exercised with a dedicated public QA account. A
+market was created with independent YES and NO token-registry assets, additional
+YES collateral was deposited, and the market's canonical YES claim was reported
+through `dark_optimistic_oracle.aleo`. The accepted assertion transaction is
+`at17hqfx3nlfp8tn6trje22yyp67jdjvej8usccnclu9n6x93eg2u8svxjsgk`; detailed
+mapping values and test identifiers are maintained in `DEVELOP.md`.
+
 The production build uses `/predmkt/` as its base path. To preview at the root locally:
 
 ```bash
