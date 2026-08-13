@@ -140,5 +140,10 @@ DOOR payment and voting-right record plaintext is replaced with a classification
 plaintext length, and SHA-256 fingerprint before logging. The fingerprint allows
 correlation across an audit without disclosing a spendable record.
 
+Provable can represent an absent mapping value as either HTTP 404 or a JSON
+`null` response with HTTP 200. The shared mapping reader treats both forms as
+missing state; this prevents a nonexistent oracle assertion or disputer from
+being rendered as the literal string `"null"`.
+
 Mainnet remains intentionally locked behind both an explicit command argument
 and a public confirmation value.

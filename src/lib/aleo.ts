@@ -137,6 +137,7 @@ export async function readMapping(
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`Unable to read ${mapping} (${response.status}).`);
   const value: unknown = await response.json();
+  if (value === null || value === undefined || value === 'null') return null;
   return typeof value === 'string' ? value : JSON.stringify(value);
 }
 

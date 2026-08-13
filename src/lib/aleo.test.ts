@@ -76,6 +76,9 @@ describe('Aleo hashing and API parsing', () => {
       if (url.endsWith('/4field') && url.startsWith('https://api.provable.com/')) {
         return { ok: false, status: 404 };
       }
+      if (url.endsWith('/5field')) {
+        return { ok: true, status: 200, json: async () => null };
+      }
       return { ok: true, status: 200, json: async () => '7u128' };
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -86,6 +89,7 @@ describe('Aleo hashing and API parsing', () => {
       /Unable to read values \(503\)/,
     );
     await expect(readMapping('program.aleo', 'values', '4field')).resolves.toBe('7u128');
+    await expect(readMapping('program.aleo', 'values', '5field')).resolves.toBeNull();
 
     const requests = consoleSpy.mock.calls
       .filter(([prefix]) => prefix === '[Aleo audit]')
