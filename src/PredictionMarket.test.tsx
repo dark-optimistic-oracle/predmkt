@@ -36,6 +36,7 @@ describe('PredictionMarket', () => {
     render(<PredictionMarket />);
 
     expect(screen.getByRole('heading', { name: /prediction market console/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /download audit log\.md/i })).toBeEnabled();
     expect(screen.getByText(/DOOR is not used here/i)).toBeInTheDocument();
     expect(screen.getByText(/losing asset redeems for zero/i)).toBeInTheDocument();
     expect(await screen.findAllByText(/YES101/i)).not.toHaveLength(0);

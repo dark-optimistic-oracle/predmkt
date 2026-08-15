@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   CircleDollarSign,
   Clock3,
+  Download,
   FileCheck2,
   Flag,
   Gavel,
@@ -37,7 +38,13 @@ import {
   toU32,
   toU64,
 } from './lib/aleo';
-import { beginAleoCall, completeAleoCall, failAleoCall, formatAleoAuditInputs } from './lib/aleoAudit';
+import {
+  beginAleoCall,
+  completeAleoCall,
+  downloadAleoAuditMarkdown,
+  failAleoCall,
+  formatAleoAuditInputs,
+} from './lib/aleoAudit';
 import { waitForWalletTransaction } from './lib/aleoTransactionStatus';
 
 type Stage = 'trade' | 'report' | 'challenge' | 'settle';
@@ -512,6 +519,14 @@ export default function PredictionMarket() {
           <div><ShieldCheck aria-hidden="true" /><span>Oracle</span><strong>{programs.oracle ? 'Ready' : 'Not deployed'}</strong></div>
           <div><Binary aria-hidden="true" /><span>Market</span><strong>{programs.market ? 'Ready' : 'Not deployed'}</strong></div>
           <div><WalletCards aria-hidden="true" /><span>Shield wallet</span><strong>{formatAddress(address)}</strong></div>
+        </div>
+
+        <div className="audit-export">
+          <span>Calls are retained locally with private records redacted.</span>
+          <button className="secondary-button" onClick={downloadAleoAuditMarkdown} type="button">
+            <Download aria-hidden="true" size={17} />
+            Download audit LOG.md
+          </button>
         </div>
 
         <div className="market-lookup">

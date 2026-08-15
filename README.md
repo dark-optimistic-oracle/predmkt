@@ -122,6 +122,11 @@ plaintext length, and SHA-256 fingerprint so an auditor can correlate calls
 without receiving a spendable record. Private keys are never available to or
 logged by the site.
 
+Every redacted entry is also retained automatically in browser storage. Use the
+site's **Download audit LOG.md** control to export exact JSON evidence with a
+plain-English explanation for each operation. The complete call inventory and
+retained live Testnet record are in [LOG.md](LOG.md).
+
 ### Live Testnet QA
 
 The browser workflow has been exercised with a dedicated public QA account. A
@@ -130,6 +135,8 @@ YES collateral was deposited, and the market's canonical YES claim was reported
 through `dark_optimistic_oracle.aleo`. The accepted assertion transaction is
 `at17hqfx3nlfp8tn6trje22yyp67jdjvej8usccnclu9n6x93eg2u8svxjsgk`; detailed
 mapping values and test identifiers are maintained in `DEVELOP.md`.
+The corresponding retained call sequence and human-readable explanations are
+in [LOG.md](LOG.md).
 
 The production build uses `/predmkt/` as its base path. To preview at the root locally:
 

@@ -145,6 +145,14 @@ Provable can represent an absent mapping value as either HTTP 404 or a JSON
 missing state; this prevents a nonexistent oracle assertion or disputer from
 being rendered as the literal string `"null"`.
 
+The audit writer automatically stores the latest 2,000 redacted entries under a
+prediction-market-specific `localStorage` key. `buildAleoAuditMarkdown` converts
+the journal to human-readable operation explanations followed by exact JSON,
+and the UI's **Download audit LOG.md** control downloads it. Static GitHub Pages
+cannot write or commit repository files, so reviewed exports must still be
+appended and committed deliberately. The complete operation inventory and
+retained call evidence live in [LOG.md](LOG.md).
+
 ## Live Testnet browser QA (2026-08-13)
 
 The dedicated public QA account
@@ -172,8 +180,9 @@ was used through Shield. No wallet secret is stored in this repository.
 
 This evidence validates the connected-wallet reporting path and the browser
 audit distinction between Shield's temporary request ID and the accepted
-on-chain transaction ID. Settlement and redemption evidence is appended as the
-interactive lifecycle proceeds.
+on-chain transaction ID. The retained settlement request never received wallet
+approval and is documented in [LOG.md](LOG.md) as incomplete; the on-chain
+market therefore remains unresolved and redemption has not occurred.
 
 Mainnet remains intentionally locked behind both an explicit command argument
 and a public confirmation value.
