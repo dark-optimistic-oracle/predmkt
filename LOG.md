@@ -374,3 +374,19 @@ unsigned network deployment builds passed again locally. These CI and container
 experiments used public source and read-only dependency endpoints only; no
 secret environment file was mounted or loaded and no Aleo transaction was
 created.
+
+## 2026-08-15 09:08 EDT — Published Pages smoke test
+
+GitHub Actions run `31886243646` completed successfully for commit `7480068`.
+It passed frontend lint, 36/36 frontend tests, dependency and static security
+checks, the checksum-verified Leo 4.4.1 installation, 10/10 oracle tests, 13/13
+market tests, all three unsigned deployment builds, the production build, and
+the Pages deployment.
+
+The published site at
+`https://dark-optimistic-oracle.github.io/predmkt/` was then loaded in an
+integrated browser. The document completed loading with the expected title,
+market, explanation, and documentation sections. Public Testnet reads reported
+the current block and both programs as available; Shield remained disconnected,
+so every transaction control stayed disabled and no proof, wallet request,
+signature, submission, or fee occurred.
