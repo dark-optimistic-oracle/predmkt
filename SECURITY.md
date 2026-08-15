@@ -2,9 +2,15 @@
 
 ## Review status
 
-An internal engineering security review was completed on 2026-07-26. It covered the Aleo programs, React client, wallet transaction construction, public mapping reads, deployment scripts, external Aleo program dependencies, and GitHub Pages workflow.
+Internal engineering reviews were completed on 2026-07-26 and 2026-08-15. The
+append-only [AUDIT.md](AUDIT.md) records the later findings, fixes, verification,
+and residual risks across the Aleo programs, React client, wallet boundary,
+dependencies, scripts, and deployment workflow.
 
-This review is not an independent third-party audit, formal verification, or a guarantee that the software is free of vulnerabilities. The repository remains a demonstration until the programs are deployed, exercised end to end on a live network, and independently reviewed.
+This review is not an independent third-party audit, formal verification, or a
+guarantee that the software is free of vulnerabilities. The repository remains
+a Testnet demonstration pending broader adversarial lifecycle testing and
+independent review.
 
 ## Security model
 
@@ -26,9 +32,9 @@ The design relies on these trust assumptions:
 | Local token-registry workaround | Restricted to local devnet deployment, compiled with the other programs, checked for an upgrade administrator, and skipped on public networks. Its broader token behavior is inherited from the bundled implementation and has not received an independent cryptographic review here. |
 | React client | Strict unsigned-value parsing, integer range checks, bounded private-record input, wallet capability checks, fail-closed program availability checks, transaction payload tests, API error handling, and no persistent storage of private records. |
 | Wallet integration | Shield is the configured wallet adapter. Tests verify every transaction family constructed by the UI. Final authorization and proof generation remain wallet responsibilities. |
-| Aleo integrations | Public deployment requires the canonical registry to exist. Settlement calls the oracle verifier and binds assertion ID, market ID, claim hash, market close height, and expected validity. |
+| Aleo integrations | Public deployment requires the canonical registry to exist. Settlement calls the oracle verifier and binds the actual post-close assertion to market ID, canonical claim hash, close height, and expected validity. |
 | Deployment | Separate devnet, Testnet, and locked Mainnet entry points; no embedded keys; key/admin matching; temporary administrator substitution; deploy-or-upgrade detection; confirmation-marker checks; canonical public registry checks; and dry-run compilation. |
-| GitHub Pages and dependencies | CI runs lint, browser-unit/lifecycle tests, static security checks, and a production build. Direct Provable wallet packages are version-pinned, the lockfile is frozen, and GitHub Actions are pinned to full commit SHAs. |
+| GitHub Pages and dependencies | CI runs lint, browser-unit/lifecycle tests, full dependency audit, Leo tests, three-network dry-run compilation, static security checks, and a production build. Direct Provable wallet packages are version-pinned, the lockfile is frozen, and GitHub Actions are pinned to full commit SHAs. |
 
 ## Findings and disposition
 
@@ -55,6 +61,8 @@ The design relies on these trust assumptions:
 - An assertion used by a market must have been created after that market stopped accepting positions.
 - Claims, market IDs, and assertion IDs are immutable settlement bindings.
 - Every bundled deployable Aleo program has an explicit `@admin` upgrade policy.
+- Oracle initialization and initial treasury/fee roles require that administrator.
+- YES and NO canonical claim hashes must be distinct.
 
 ## Residual risks
 
@@ -64,7 +72,9 @@ The design relies on these trust assumptions:
 - Registry metadata can be misleading, and outcome tokens are transferable independently of this interface.
 - A compromised wallet, browser extension, dependency, GitHub account, or Pages deployment can deceive users even when on-chain checks remain intact.
 - The canonical registry and credits programs are external dependencies outside this repository’s upgrade and audit scope.
-- Testnet and Mainnet end-to-end transaction tests cannot be completed until the two custom programs are deployed there. Mainnet deployment is intentionally locked.
+- Function direction and aggregate vote totals remain public even when voting
+  records and the transaction fee are private.
+- Mainnet deployment is intentionally locked.
 
 ## Verification commands
 

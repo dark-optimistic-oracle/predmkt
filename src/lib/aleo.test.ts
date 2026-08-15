@@ -28,6 +28,7 @@ describe('Aleo input formatting', () => {
     expect(() => toU32('-1')).toThrow(/unsigned decimal/i);
     expect(() => toU64('1.5')).toThrow(/unsigned decimal/i);
     expect(() => toU128('10u64')).toThrow(/unsigned decimal/i);
+    expect(() => toU128('1__000')).toThrow(/unsigned decimal/i);
     expect(() => toU32('4294967296')).toThrow(/out of range/i);
   });
 

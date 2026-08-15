@@ -1,6 +1,6 @@
 # Development Notes
 
-Last updated: 2026-07-27
+Last updated: 2026-08-15
 
 ## Responsibility
 
@@ -19,11 +19,13 @@ combines the landing page, explanation, and application.
 - Once the oracle accepts an undisputed assertion or resolves a dispute, the
   losing outcome has no redemption path and is worth zero to the contract.
   Winning tokens divide all settlement collateral proportionally.
-- Settlement binds the assertion ID, market ID, reported claim hash, market
-  close height, and oracle result.
+- Settlement accepts any post-close assertion bound to the market ID and one of
+  its distinct canonical claim hashes, then records the actual assertion ID.
 - Repeat settlement and invalid-token redemption fail on-chain.
 - Every deployable project program has a Leo 4 `@admin` constructor. Deployment
   scripts substitute the selected administrator in a temporary source tree.
+- Oracle initialization, treasury mint, and fee collector are bound to the same
+  administrator. New voting rights close 10 blocks before voting ends.
 
 The oracle copy here is authoritative for the combined demonstration and is
 kept synchronized with `../core/src/main.leo`.
@@ -35,8 +37,9 @@ kept synchronized with `../core/src/main.leo`.
   vote, settlement, and winning-token redemption flows.
 - Kept the landing page, protocol explanation, and application in one static
   site suitable for GitHub Pages.
-- Added fail-closed program availability checks and explicit Aleo input
-  formatting.
+- Added fail-closed program availability checks, strict Aleo input validation,
+  distinct-claim/deadline checks, a pending transaction lock, and private fees
+  for record-based voting operations.
 - Added read-only fallback between Provable's two official `/v2` API hosts so
   temporary propagation differences do not incorrectly mark an accepted
   deployment unavailable. Custom and local endpoints remain single-provider.
@@ -64,12 +67,14 @@ Current Testnet administrator:
 pnpm check
 pnpm test:contracts
 pnpm deploy:check
+pnpm audit --prod
+pnpm audit
 ```
 
 Current results:
 
-- 33/33 browser and lifecycle unit tests pass.
-- 21/21 Leo unit tests pass.
+- 36/36 browser and lifecycle unit tests pass.
+- 27/27 Leo unit tests pass.
 - ESLint, static security checks, TypeScript, and the production Vite build
   pass.
 - Devnet, Testnet, and Mainnet dry-run builds pass without signing or
@@ -100,7 +105,9 @@ schedule through height 20. The ignored local binary is only a compatible
 fallback when the macOS Xcode `libclang` runtime prevents Leo's installer from
 completing.
 
-The public Testnet deployment completed successfully:
+The original public Testnet deployment completed successfully. The 2026-08-15
+security upgrades and preserved-state verification are recorded in
+`DEPLOYMENTS.md`, `LOG.md`, and `AUDIT.md`:
 
 - `dark_optimistic_oracle.aleo`: edition `0`, initialized against canonical
   `token_registry.aleo`.

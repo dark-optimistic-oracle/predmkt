@@ -166,6 +166,7 @@ describe('PredictionMarket', () => {
         }),
       ),
     );
+    await screen.findByText(/dispute_assertion accepted on Testnet/i);
 
     fireEvent.change(screen.getByLabelText(/private DOOR payment record/i), {
       target: { value: '{ owner: aleo1private, amount: 1000000u128 }' },
@@ -183,6 +184,7 @@ describe('PredictionMarket', () => {
         }),
       ),
     );
+    await screen.findByText(/new_voting_right accepted on Testnet/i);
 
     fireEvent.change(screen.getByLabelText(/private voting-right record/i), {
       target: { value: '{ owner: aleo1private, assertion_id: 501field }' },
@@ -208,10 +210,12 @@ describe('PredictionMarket', () => {
       classification: 'private Aleo record',
       sha256: expect.stringMatching(/^[0-9a-f]{64}$/),
     }));
+    expect(privateAuditEntries[0].parameters.privateFee).toBe(true);
     expect(privateAuditEntries[1].parameters.inputs[0].value).toEqual(expect.objectContaining({
       redacted: true,
       sha256: expect.stringMatching(/^[0-9a-f]{64}$/),
     }));
+    expect(privateAuditEntries[1].parameters.privateFee).toBe(true);
     consoleSpy.mockRestore();
   });
 
@@ -267,6 +271,20 @@ describe('PredictionMarket', () => {
     fireEvent.click(screen.getByRole('button', { name: /create market/i }));
 
     expect(await screen.findByText(/field values must be unsigned decimal integers/i)).toBeInTheDocument();
+    expect(executeTransactionMock).not.toHaveBeenCalled();
+  });
+
+  it('rejects identical YES and NO claims before invoking the wallet', async () => {
+    render(<PredictionMarket />);
+    fireEvent.change(screen.getByLabelText(/canonical YES claim/i), {
+      target: { value: 'The same outcome claim.' },
+    });
+    fireEvent.change(screen.getByLabelText(/canonical NO claim/i), {
+      target: { value: 'The same outcome claim.' },
+    });
+    fireEvent.click(screen.getByRole('button', { name: /create market/i }));
+
+    expect(await screen.findByText(/YES and NO claims must be different/i)).toBeInTheDocument();
     expect(executeTransactionMock).not.toHaveBeenCalled();
   });
 

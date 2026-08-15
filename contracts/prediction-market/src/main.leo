@@ -26,6 +26,10 @@ fn resolve_binary_outcome_logic(reported_outcome: bool, assertion_valid: bool) -
     return reported_outcome == assertion_valid;
 }
 
+fn claims_are_distinct_logic(yes_claim_hash: field, no_claim_hash: field) -> bool {
+    return yes_claim_hash != no_claim_hash;
+}
+
 fn calculate_redemption_logic(
     amount: u128,
     total_collateral: u128,
@@ -53,6 +57,10 @@ program doo_prediction_market.aleo {
     mapping resolved: field => bool;
     mapping resolutions: field => bool;
     mapping settlement_collateral: field => u128;
+    // Records the valid post-close oracle assertion that actually settled a
+    // market. The legacy Market.assertion_id remains a suggested UI default so
+    // existing stored Market values keep the exact same layout.
+    mapping settlement_assertions: field => field;
 
     // Pure helpers are shared by settlement/finalize logic and Leo unit tests.
     fn resolve_binary_outcome(public reported_outcome: bool, public assertion_valid: bool) -> bool {
@@ -65,6 +73,10 @@ program doo_prediction_market.aleo {
         public winning_supply: u128
     ) -> u128 {
         return calculate_redemption_logic(amount, total_collateral, winning_supply);
+    }
+
+    fn claims_are_distinct(public yes_claim_hash: field, public no_claim_hash: field) -> bool {
+        return claims_are_distinct_logic(yes_claim_hash, no_claim_hash);
     }
 
     // Registers YES<x> and NO<x> as independent token-registry assets and
@@ -112,6 +124,7 @@ program doo_prediction_market.aleo {
 
         return final {
             assert_eq(Mapping::get_or_use(market_creators, market.id, ZERO_ADDRESS), ZERO_ADDRESS);
+            assert(claims_are_distinct_logic(market.yes_claim_hash, market.no_claim_hash));
             assert_neq(market.yes_token_id, market.no_token_id);
             assert_neq(market.yes_token_name, 0u128);
             assert_neq(market.no_token_name, 0u128);
@@ -213,7 +226,6 @@ program doo_prediction_market.aleo {
                 ? market.yes_claim_hash
                 : market.no_claim_hash;
             let outcome: bool = resolve_binary_outcome_logic(reported_outcome, assertion_valid);
-            assert_eq(market.assertion_id, assertion_id);
             assert_eq(reported_claim_hash, expected_claim_hash);
             assert_eq(market.betting_deadline_block_height, betting_deadline_block_height);
             assert(block.height > market.betting_deadline_block_height);
@@ -229,6 +241,7 @@ program doo_prediction_market.aleo {
             Mapping::set(resolved, market_id, true);
             Mapping::set(resolutions, market_id, outcome);
             Mapping::set(settlement_collateral, market_id, collateral);
+            Mapping::set(settlement_assertions, market_id, assertion_id);
             verify.run();
         };
     }

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useWallet } from '@provablehq/aleo-wallet-adaptor-react';
 import {
   AlertTriangle,
@@ -30,6 +30,7 @@ import {
   asciiToU128,
   extractBlockHeight,
   fetchTestnet,
+  literalValue,
   normalizeRecord,
   readMapping,
   textToField,
@@ -66,6 +67,14 @@ const DEFAULT_ASSERTION_ID = '501';
 const DEFAULT_COST = '100000000';
 const DEFAULT_STAKE = '1000000';
 const DEFAULT_AMOUNT = '25000000';
+const MAX_BONDED_AMOUNT = 170141183460469231731687303715884105n;
+const PRIVATE_FEE_FUNCTIONS = new Set([
+  'new_voting_right',
+  'confirm',
+  'deny',
+  'collect_voting_award',
+  'refund_voting_right',
+]);
 
 const stageItems: Array<{
   id: Stage;
@@ -126,6 +135,8 @@ export default function PredictionMarket() {
   const [positionOutcome, setPositionOutcome] = useState(true);
   const [settlementOutcome, setSettlementOutcome] = useState(true);
   const [payoutAmount, setPayoutAmount] = useState('');
+  const [transactionPending, setTransactionPending] = useState(false);
+  const transactionPendingRef = useRef(false);
 
   const ready = programs.oracle && programs.market;
   const marketSuffix = marketId.replace(/[^a-zA-Z0-9]/g, '').slice(0, 13) || 'MKT';
@@ -226,30 +237,37 @@ export default function PredictionMarket() {
       setNotice({ type: 'error', message: 'The connected wallet cannot execute transactions.' });
       return;
     }
+    if (transactionPendingRef.current) {
+      setNotice({ type: 'error', message: 'Wait for the pending wallet request before submitting another transaction.' });
+      return;
+    }
+
+    transactionPendingRef.current = true;
+    setTransactionPending(true);
 
     const request = {
       program,
       function: functionName,
       inputs,
       fee: TRANSACTION_FEE,
-      privateFee: false,
+      privateFee: PRIVATE_FEE_FUNCTIONS.has(functionName),
     };
-    const auditInputs = await formatAleoAuditInputs(inputs, inputNames);
-    const audit = beginAleoCall({
-      kind: 'transaction',
-      network: 'testnet',
-      description: `Submit ${program}.${functionName}`,
-      program,
-      function: functionName,
-      parameters: {
-        caller: address,
-        inputs: auditInputs,
-        fee: request.fee,
-        privateFee: request.privateFee,
-      },
-    });
-
+    let audit: ReturnType<typeof beginAleoCall> | null = null;
     try {
+      const auditInputs = await formatAleoAuditInputs(inputs, inputNames);
+      audit = beginAleoCall({
+        kind: 'transaction',
+        network: 'testnet',
+        description: `Submit ${program}.${functionName}`,
+        program,
+        function: functionName,
+        parameters: {
+          caller: address,
+          inputs: auditInputs,
+          fee: request.fee,
+          privateFee: request.privateFee,
+        },
+      });
       const result = await executeTransaction(request);
       const walletRequestId = result?.transactionId ?? null;
       completeAleoCall(audit, 'submitted', {
@@ -303,11 +321,14 @@ export default function PredictionMarket() {
         message: `${functionName} ${finalStatus.status}${finalStatus.error ? `: ${finalStatus.error}` : '.'}`,
       });
     } catch (error) {
-      failAleoCall(audit, error);
+      if (audit) failAleoCall(audit, error);
       setNotice({
         type: 'error',
         message: error instanceof Error ? error.message : `Unable to submit ${functionName}.`,
       });
+    } finally {
+      transactionPendingRef.current = false;
+      setTransactionPending(false);
     }
   };
 
@@ -328,7 +349,13 @@ export default function PredictionMarket() {
   };
 
   const createMarket = () =>
-    submit(MARKET_PROGRAM_ID, 'create_market', () => [
+    submit(MARKET_PROGRAM_ID, 'create_market', () => {
+      if (canonicalYesClaim.trim() === canonicalNoClaim.trim()) {
+        throw new Error('YES and NO claims must be different.');
+      }
+      const close = literalValue(bettingDeadline, 'u32');
+      if (height !== null && close <= BigInt(height)) throw new Error('Betting deadline must be after the current block.');
+      return [
       `{
         id: ${toField(marketId)},
         question_hash: ${questionHash},
@@ -344,7 +371,8 @@ export default function PredictionMarket() {
         betting_deadline_block_height: ${toU32(bettingDeadline)}
       }`,
       toU64(initialLiquidity),
-    ], ['market', 'initial_liquidity']);
+      ];
+    }, ['market', 'initial_liquidity']);
 
   const buyPosition = (outcome: boolean) =>
     submit(MARKET_PROGRAM_ID, 'buy_outcome', () => [
@@ -355,7 +383,18 @@ export default function PredictionMarket() {
     ], ['market_id', 'outcome', 'outcome_token_id', 'amount']);
 
   const reportOutcome = () =>
-    submit(ORACLE_PROGRAM_ID, 'create_assertion', () => [
+    submit(ORACLE_PROGRAM_ID, 'create_assertion', () => {
+      const cost = literalValue(assertionCost, 'u128');
+      const stake = literalValue(voterStake, 'u128');
+      const dispute = literalValue(disputeDeadline, 'u32');
+      const vote = literalValue(votingDeadline, 'u32');
+      if (cost < 10n || cost > MAX_BONDED_AMOUNT) throw new Error('Assertion bond is outside the contract range.');
+      if (stake < 100n || stake > MAX_BONDED_AMOUNT) throw new Error('Voter stake is outside the contract range.');
+      if (height !== null && dispute < BigInt(height) + 10n) {
+        throw new Error('Dispute deadline must be at least 10 blocks after the current block.');
+      }
+      if (vote < dispute + 10n) throw new Error('Voting deadline must be at least 10 blocks after the dispute deadline.');
+      return [
       `{
         id: ${toField(assertionId)},
         title: ${toField(marketId)},
@@ -365,7 +404,8 @@ export default function PredictionMarket() {
         dispute_deadline_block_height: ${toU32(disputeDeadline)},
         voting_deadline_block_height: ${toU32(votingDeadline)}
       }`,
-    ], ['assertion']);
+      ];
+    }, ['assertion']);
 
   const dispute = () =>
     submit(ORACLE_PROGRAM_ID, 'dispute_assertion', () => [
@@ -621,7 +661,7 @@ export default function PredictionMarket() {
                   <div><span>{yesTokenLabel}</span><code>{yesTokenId}</code></div>
                   <div><span>{noTokenLabel}</span><code>{noTokenId}</code></div>
                 </div>
-                <button className="primary-button" type="button" onClick={createMarket} disabled={!connected || !ready}>
+                <button className="primary-button" type="button" onClick={createMarket} disabled={!connected || !ready || transactionPending}>
                   <Sparkles aria-hidden="true" size={17} /> Create market
                 </button>
               </form>
@@ -631,10 +671,10 @@ export default function PredictionMarket() {
                 <p>Deposit neutral public Aleo credits and receive the selected market token. DOOR is not used here.</p>
                 <label>Collateral in microcredits<input value={positionAmount} onChange={(event) => setPositionAmount(event.target.value)} /></label>
                 <div className="outcome-buttons">
-                  <button type="button" className="yes-button" onClick={() => buyPosition(true)} disabled={!connected || !ready}>
+                  <button type="button" className="yes-button" onClick={() => buyPosition(true)} disabled={!connected || !ready || transactionPending}>
                     <Check aria-hidden="true" /> Mint {yesTokenLabel}
                   </button>
-                  <button type="button" className="no-button" onClick={() => buyPosition(false)} disabled={!connected || !ready}>
+                  <button type="button" className="no-button" onClick={() => buyPosition(false)} disabled={!connected || !ready || transactionPending}>
                     <X aria-hidden="true" /> Mint {noTokenLabel}
                   </button>
                 </div>
@@ -653,7 +693,8 @@ export default function PredictionMarket() {
                 <Flag aria-hidden="true" size={28} />
               </div>
               <p>
-                The market accepts only the assertion ID and matching YES or NO claim hash fixed at creation.
+                The displayed assertion ID is a suggested unique default. Settlement accepts any post-close assertion
+                whose market ID and YES or NO claim hash match the market.
                 The assertion is optimistic: it becomes usable after its challenge window if nobody disputes it.
               </p>
               <div className="segmented">
@@ -669,7 +710,7 @@ export default function PredictionMarket() {
                 <label>Dispute deadline block<input value={disputeDeadline} onChange={(event) => setDisputeDeadline(event.target.value)} /></label>
                 <label>Voting deadline block<input value={votingDeadline} onChange={(event) => setVotingDeadline(event.target.value)} /></label>
               </div>
-              <button className="primary-button" type="button" onClick={reportOutcome} disabled={!connected || !ready}>
+              <button className="primary-button" type="button" onClick={reportOutcome} disabled={!connected || !ready || transactionPending}>
                 <Flag aria-hidden="true" size={17} /> Report {reportedOutcome ? 'YES' : 'NO'} outcome
               </button>
             </form>
@@ -682,13 +723,14 @@ export default function PredictionMarket() {
                 <h3>Dispute an incorrect report</h3>
                 <p>A matching bond opens the private voting phase before the grace period expires.</p>
                 <label>Dispute bond<input value={assertionCost} onChange={(event) => setAssertionCost(event.target.value)} /></label>
-                <button className="danger-button" type="button" onClick={dispute} disabled={!connected || !ready}>
+                <button className="danger-button" type="button" onClick={dispute} disabled={!connected || !ready || transactionPending}>
                   <Gavel aria-hidden="true" size={17} /> Dispute assertion
                 </button>
               </form>
               <form className="action-card" onSubmit={(event) => event.preventDefault()}>
                 <span className="eyebrow">Private Aleo voting</span>
                 <h3>Fund and cast a vote</h3>
+                <p>Private fees and records hide the voter account. The confirm/deny transition and aggregate tally remain public.</p>
                 <label>
                   Private DOOR payment record
                   <textarea
@@ -698,7 +740,7 @@ export default function PredictionMarket() {
                     placeholder="Paste a private token record from Shield wallet"
                   />
                 </label>
-                <button className="secondary-button" type="button" onClick={buyVotingRight} disabled={!connected || !ready || !privatePayment.trim()}>
+                <button className="secondary-button" type="button" onClick={buyVotingRight} disabled={!connected || !ready || transactionPending || !privatePayment.trim()}>
                   <KeyRound aria-hidden="true" size={17} /> Create voting right
                 </button>
                 <label>
@@ -711,10 +753,10 @@ export default function PredictionMarket() {
                   />
                 </label>
                 <div className="outcome-buttons">
-                  <button className="yes-button" type="button" onClick={() => castVote(true)} disabled={!connected || !ready || !votingRight.trim()}>
+                  <button className="yes-button" type="button" onClick={() => castVote(true)} disabled={!connected || !ready || transactionPending || !votingRight.trim()}>
                     <Check aria-hidden="true" /> Confirm
                   </button>
-                  <button className="no-button" type="button" onClick={() => castVote(false)} disabled={!connected || !ready || !votingRight.trim()}>
+                  <button className="no-button" type="button" onClick={() => castVote(false)} disabled={!connected || !ready || transactionPending || !votingRight.trim()}>
                     <X aria-hidden="true" /> Deny
                   </button>
                 </div>
@@ -735,7 +777,7 @@ export default function PredictionMarket() {
                   <button type="button" className={settlementOutcome ? 'active yes-choice' : ''} onClick={() => setSettlementOutcome(true)}>YES</button>
                   <button type="button" className={!settlementOutcome ? 'active no-choice' : ''} onClick={() => setSettlementOutcome(false)}>NO</button>
                 </div>
-                <button className="primary-button" type="button" onClick={settle} disabled={!connected || !ready}>
+                <button className="primary-button" type="button" onClick={settle} disabled={!connected || !ready || transactionPending}>
                   <BadgeCheck aria-hidden="true" size={17} /> Settle from oracle
                 </button>
               </form>
@@ -754,7 +796,7 @@ export default function PredictionMarket() {
                   Exact payout in microcredits
                   <input value={payoutAmount} onChange={(event) => setPayoutAmount(event.target.value)} placeholder="token amount × settlement collateral ÷ winning supply" />
                 </label>
-                <button className="secondary-button" type="button" onClick={claim} disabled={!connected || !ready || !payoutAmount.trim()}>
+                <button className="secondary-button" type="button" onClick={claim} disabled={!connected || !ready || transactionPending || !payoutAmount.trim()}>
                   <CircleDollarSign aria-hidden="true" size={17} /> Burn winner and redeem
                 </button>
               </form>
@@ -795,7 +837,7 @@ export default function PredictionMarket() {
           <article>
             <span>03</span><LockKeyhole aria-hidden="true" />
             <h3>Resolve</h3>
-            <p>Undisputed reports pass. Disputed reports wait for private votes and the public aggregate tally.</p>
+            <p>Undisputed reports pass. Disputed reports wait for record-private voters and the public directional tally.</p>
           </article>
           <ArrowRight className="flow-arrow" aria-hidden="true" />
           <article>
@@ -808,10 +850,11 @@ export default function PredictionMarket() {
           <div className="lock-orbit"><LockKeyhole aria-hidden="true" size={30} /></div>
           <div>
             <span className="eyebrow">What stays private</span>
-            <h3>Voting power and individual choices are Aleo records.</h3>
+            <h3>Voting power and voter ownership are Aleo records.</h3>
             <p>
               A voter converts a private DOOR payment record into a private voting right.
-              Casting it consumes that record and returns a private receipt, while only aggregate confirm and deny counts become public.
+              Casting it with a private fee consumes that record and returns a private receipt. The chosen confirm/deny
+              transition and aggregate counts are public, but the record owner and fee payer are hidden.
             </p>
           </div>
           <ul>

@@ -20,7 +20,9 @@ Creating a market registers both outcome tokens and seeds each side with equal c
 
 ## Settlement invariant
 
-Each market stores its question hash, canonical YES- and NO-claim hashes, assertion ID, outcome-token IDs, and betting deadline. The corresponding oracle assertion must use:
+Each market stores its question hash, distinct canonical YES- and NO-claim
+hashes, a suggested assertion ID, outcome-token IDs, and betting deadline. A
+corresponding oracle assertion must use:
 
 - The market ID as its `title`.
 - The stored canonical claim hash for the reported outcome as its `content_hash`.
@@ -30,12 +32,19 @@ Each market stores its question hash, canonical YES- and NO-claim hashes, assert
 - With no dispute, the reported outcome is accepted only after the grace period.
 - With a dispute, settlement waits for the voting deadline. Accepting the assertion selects its reported outcome; rejecting it selects the opposite binary outcome.
 
-The market cannot substitute a different assertion, claim hash, or outcome.
+Settlement may use any post-close assertion with those market-bound values; it
+stores the actual assertion ID in `settlement_assertions`. This avoids a liveness
+failure if another account registers the suggested globally unique ID first,
+without changing the existing `Market` struct.
 The oracle also records the assertion creation height. Settlement rejects an assertion created at or before the market’s betting deadline, preventing a report from maturing while positions are still available.
 
 ## Upgrade policy
 
-Every Aleo program checked into this directory declares a Leo 4 `@admin` constructor. The checked-in address is a public local-development account. Replace it with a secure administrator controlled by the deployer before any public deployment. `deploy_testnet.sh` refuses the placeholder.
+Every Aleo program checked into this directory declares a Leo 4 `@admin`
+constructor. Oracle initialization and its treasury/fee-recipient setup are
+bound to that same administrator. The checked-in address is a public
+local-development account. Deployment scripts replace both administrator uses
+in a temporary build tree and reject the placeholder on public networks.
 
 The local registry source is referenced as a build dependency so contract tests are deterministic. Public deployment scripts require the canonical `credits.aleo` and `token_registry.aleo` programs and pass `--skip` for the local dependency, so neither network-owned program is deployed or administered by this repository.
 
@@ -49,4 +58,7 @@ From the repository root:
 ```
 
 The script builds the local registry workaround first, followed by the oracle and prediction market.
-The test script executes Leo unit tests for oracle majority/tie behavior, reward arithmetic, assertion timing, binary settlement inversion, proportional payout, rounding, and invalid redemption boundaries.
+The test script executes Leo unit tests for oracle majority/tie behavior,
+administrator and voting-right timing boundaries, reward arithmetic, assertion
+timing, distinct binary claims, settlement inversion, proportional payout,
+rounding, and invalid redemption boundaries.

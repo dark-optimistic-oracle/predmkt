@@ -73,7 +73,7 @@ function normalizeUnsigned(
   const withoutSuffix = trimmed.endsWith(suffix)
     ? trimmed.slice(0, -suffix.length)
     : trimmed;
-  if (!/^(0|[1-9][\d_]*)$/.test(withoutSuffix)) {
+  if (!/^(0|[1-9]\d*(?:_\d+)*)$/.test(withoutSuffix)) {
     throw new Error(`${suffix} values must be unsigned decimal integers.`);
   }
   const digits = withoutSuffix.replaceAll('_', '');
@@ -88,6 +88,15 @@ export const toField = (value: string) =>
 export const toU32 = (value: string) => normalizeUnsigned(value, 'u32', U32_MAX);
 export const toU64 = (value: string) => normalizeUnsigned(value, 'u64', U64_MAX);
 export const toU128 = (value: string) => normalizeUnsigned(value, 'u128', U128_MAX);
+
+export function literalValue(value: string, suffix: 'u32' | 'u64' | 'u128') {
+  const normalized = suffix === 'u32'
+    ? toU32(value)
+    : suffix === 'u64'
+      ? toU64(value)
+      : toU128(value);
+  return BigInt(normalized.slice(0, -suffix.length));
+}
 
 export function normalizeRecord(value: string, label: string) {
   const record = value.trim();

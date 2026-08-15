@@ -155,6 +155,12 @@ if [[ -n "$PROTOCOL_ADMIN" ]]; then
       exit 1
     fi
   done
+  oracle_source="$DEPLOY_ROOT/contracts/oracle/src/main.leo"
+  perl -0pi -e "s/const PROTOCOL_ADMIN: address = aleo1[a-z0-9]{58};/const PROTOCOL_ADMIN: address = ${PROTOCOL_ADMIN};/g" "$oracle_source"
+  if ! rg -q "const PROTOCOL_ADMIN: address = ${PROTOCOL_ADMIN};" "$oracle_source"; then
+    echo "Failed to set the oracle initialization administrator."
+    exit 1
+  fi
 fi
 
 program_status() {

@@ -31,16 +31,20 @@ DOOR is never used to buy an outcome token or fund a market payout.
 
 ## End-to-end lifecycle
 
-1. **Create:** The creator defines a binary question, fixes canonical YES- and NO-claim hashes and an assertion ID, registers `YES<x>` and `NO<x>`, and seeds both sides.
+1. **Create:** The creator defines a binary question, fixes distinct canonical YES- and NO-claim hashes and a suggested assertion ID, registers `YES<x>` and `NO<x>`, and seeds both sides.
 2. **Participate:** A user deposits public Aleo credits and receives the selected outcome token.
 3. **Report:** After betting closes, a reporter bonds DOOR and submits the exact canonical YES or NO assertion.
 4. **Wait:** The assertion remains challengeable until its dispute deadline.
 5. **Resolve:**
    - If nobody disputes, the reported outcome may settle only after the grace period.
-   - If disputed, voters fund private voting-right records with DOOR and privately confirm or deny the report. Settlement waits until voting closes; rejecting a report selects the opposite binary outcome.
+   - If disputed, voters fund private voting-right records with DOOR and confirm or deny the report. New rights close 10 blocks before voting ends. Settlement waits until voting closes; rejecting a report selects the opposite binary outcome.
 6. **Redeem:** The market calls the oracle verifier. Losing tokens become non-redeemable; winning tokens divide the complete collateral pool.
 
-The market contract binds settlement to the market ID, assertion ID, and canonical YES/NO claim hashes fixed at creation. A caller cannot replace any of them with a convenient outcome.
+The market contract accepts any assertion created after betting closes whose
+title is the market ID and whose content hash is the canonical YES or NO claim.
+The stored assertion ID is a suggested default, so another account cannot lock
+the market by registering that global oracle ID first. Settlement records the
+actual verified assertion ID on-chain.
 
 ## Privacy model
 
@@ -51,7 +55,10 @@ Market questions, outcome-token supplies, collateral, aggregate vote counts, and
 - Private vote receipt.
 - Private voter reward or refund.
 
-The aggregate confirm and deny counts are public so downstream contracts can verify the result without revealing the records that carried each voter’s right and receipt.
+The records and private fee can hide the record owner and fee payer. The
+`confirm` or `deny` transition name and aggregate counts remain public so
+downstream contracts can verify the result. This is record privacy, not a hidden
+vote direction or hidden tally.
 
 ## Repository layout
 
@@ -67,6 +74,7 @@ The aggregate confirm and deny counts are public so downstream contracts can ver
 ├── deploy_testnet.sh               # guarded Testnet workflow
 ├── deploy_mainnet.sh               # locked Mainnet workflow
 ├── SECURITY.md                     # internal review, threat model, residual risks
+├── AUDIT.md                        # dated findings, fixes, and residual risks
 └── .github/workflows/pages.yml     # GitHub Pages build and deployment
 ```
 
@@ -103,6 +111,10 @@ pnpm security:audit
 ```
 
 The browser suite covers input parsing, API handling, every frontend transaction family, all binary assertion-result combinations, deadline failures, claim binding, payout conservation, rounding, and repeat-redemption rejection. `pnpm test:contracts` runs the Leo unit tests for oracle and market rules. The deployment check compiles all three programs for each target without signing or broadcasting.
+
+The 2026-08-15 remediation result is 36/36 frontend/model tests and 27/27 Leo
+tests, with zero known production or development dependency vulnerabilities.
+See [AUDIT.md](AUDIT.md) for the exact scope and limitations.
 
 ### Auditing Aleo calls
 
@@ -240,9 +252,12 @@ In the repository settings, select **GitHub Actions** as the Pages source. Jekyl
 
 ## Demonstration status
 
-Both Testnet programs are deployed at edition `0`. The public client still
+Both Testnet programs are deployed and upgradeable. Current editions and every
+accepted deploy/upgrade transaction are recorded in [DEPLOYMENTS.md](DEPLOYMENTS.md). The public client still
 fails closed when neither official API provider can verify a required program:
 documentation and source remain accessible, but transaction buttons are
 disabled.
 
-This software is a Testnet demonstration. An internal engineering security review and its residual risks are documented in [SECURITY.md](SECURITY.md); it is not an independent audit or formal verification.
+This software is a Testnet demonstration. Dated engineering findings, fixes,
+verification, and residual risks are documented in [AUDIT.md](AUDIT.md) and
+[SECURITY.md](SECURITY.md); neither is an independent audit or formal verification.

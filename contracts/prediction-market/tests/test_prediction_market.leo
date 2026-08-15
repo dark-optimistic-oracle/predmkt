@@ -22,6 +22,16 @@ program test_prediction_market.aleo {
     }
 
     @test
+    fn accepts_distinct_claim_hashes() {
+        assert(doo_prediction_market.aleo::claims_are_distinct(1field, 2field));
+    }
+
+    @test
+    fn rejects_identical_claim_hashes() {
+        assert(!doo_prediction_market.aleo::claims_are_distinct(1field, 1field));
+    }
+
+    @test
     fn full_supply_gets_all_collateral() {
         assert_eq(
             doo_prediction_market.aleo::calculate_redemption(100u128, 250u128, 100u128),

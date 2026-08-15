@@ -68,3 +68,40 @@ call evidence is recorded in `LOG.md`.
 - The current Testnet oracle and market instruction sets matched the freshly
   compiled sources except for the expected deployment administrator substitution;
   both were edition 0 at review time.
+
+## 2026-08-15 — Remediation verification
+
+Verification time: 2026-08-15 07:04 EDT (computer local time).
+
+### Fixes and dispositions
+
+| Finding | Disposition | Remediation and remaining risk |
+| --- | --- | --- |
+| PM-2026-08-15-01 | Fixed | The oracle initializer, treasury mint, and fee collector are all bound to the same administrator used for upgrades. Deployment substitutes and verifies both values before compilation. |
+| PM-2026-08-15-02 | Fixed | Settlement now accepts any assertion created after market close whose title and selected canonical claim hash bind it to the market. The actual assertion is stored in the new `settlement_assertions` mapping; the existing `Market` struct and suggested ID remain unchanged. |
+| PM-2026-08-15-03 | Fixed | Market creation rejects identical YES and NO claim hashes in Leo and the frontend. Positive and negative contract/model tests were added. |
+| PM-2026-08-15-04 | Mitigated | New voting rights close 10 blocks before the vote deadline. Previously acquired rights and visible live totals leave residual strategic-voting risk. |
+| PM-2026-08-15-05 | Mitigated | Record-based voting lifecycle calls request private fees and the exact public/private boundary is shown in the UI. Function direction and aggregate counts remain public. |
+| PM-2026-08-15-06 | Fixed | A global pending lock prevents duplicate wallet prompts. Deeper review confirmed the earlier parser was already range-aware; this remediation additionally hardened canonical syntax, record bounds, distinct claims, and cross-deadline validation. |
+| PM-2026-08-15-07 | Fixed except local broadcast gate | CI separates read-only verification from Pages deployment, runs full audits, installs the pinned Leo release, runs all Leo tests, and compiles all three deployment targets. A live local broadcast lifecycle remains an explicit environment-dependent release check. |
+| PM-2026-08-15-08 | Fixed | Tooling and transitive dependencies were upgraded/overridden. Production and full dependency audits report zero known vulnerabilities. |
+| PM-2026-08-15-09 | Partially fixed | Model and Leo coverage now includes all binary outcome inversions, duplicate claims, proportional payout, input limits, and key timing/authorization boundaries. Disputed broadcast and hostile-record local lifecycles remain future integration work. |
+| PM-2026-08-15-10 | Partially fixed | A restrictive document CSP and `no-referrer` were added. Complete response headers and origin isolation require the future custom-domain front door. |
+| PM-2026-08-15-11 | Accepted for QA | Readable public call evidence remains intentionally user-controlled. Private records and recognizable secret shapes remain redacted; exports are client-generated and require on-chain verification. |
+| PM-2026-08-15-12 | Accepted risk | The dedicated single upgrade key remains an explicit trust boundary. Multisignature/timelock governance is still required before meaningful production custody. |
+
+### Compatibility and verification
+
+- Program IDs and every existing struct, record, and mapping layout are
+  unchanged. The market adds one mapping without rewriting existing markets;
+  the stored assertion ID remains a backwards-compatible suggested default.
+- Frontend: ESLint/static checks/build passed; 36/36 Vitest tests passed.
+- Contracts: 14/14 oracle and 13/13 market Leo tests passed (27/27 total).
+- Devnet, Testnet, and Mainnet deployment builds compiled in dry-run mode.
+- Production and full dependency audits report zero known vulnerabilities.
+- The pre-upgrade Testnet snapshot showed both programs at edition 0 and
+  preserved the existing unresolved QA market and assertion. Upgrade and
+  post-upgrade state evidence are recorded in `LOG.md` and `DEPLOYMENTS.md`.
+
+This is an engineering remediation review, not a formal proof, economic audit,
+or independent third-party assessment.
