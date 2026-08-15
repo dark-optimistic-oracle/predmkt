@@ -83,12 +83,12 @@ program doo_prediction_market.aleo {
     // seeds both sides with an equal amount of public Aleo credits. DOOR is
     // not used by the market; it remains exclusive to oracle incentives.
     fn create_market(public market: Market, public initial_liquidity: u64) -> Final {
-        let creator: address = self.caller;
+        let creator: address = std::ctx::caller();
         let initial_supply: u128 = initial_liquidity as u128;
         let combined_liquidity: u64 = initial_liquidity * 2u64;
 
         let deposit: Final = credits.aleo::transfer_public_as_signer(
-            self.address,
+            std::ctx::addr(),
             combined_liquidity
         );
         let register_yes: Final = token_registry.aleo::register_token(
@@ -98,7 +98,7 @@ program doo_prediction_market.aleo {
             6u8,
             MAX_OUTCOME_SUPPLY,
             false,
-            self.address
+            std::ctx::addr()
         );
         let register_no: Final = token_registry.aleo::register_token(
             market.no_token_id,
@@ -107,7 +107,7 @@ program doo_prediction_market.aleo {
             6u8,
             MAX_OUTCOME_SUPPLY,
             false,
-            self.address
+            std::ctx::addr()
         );
         let mint_yes: Final = token_registry.aleo::mint_public(
             market.yes_token_id,
@@ -130,7 +130,7 @@ program doo_prediction_market.aleo {
             assert_neq(market.no_token_name, 0u128);
             assert_neq(market.yes_token_symbol, 0u128);
             assert_neq(market.no_token_symbol, 0u128);
-            assert(market.betting_deadline_block_height > block.height);
+            assert(market.betting_deadline_block_height > std::ctx::block_height());
             assert(initial_liquidity > 0u64);
             assert(initial_liquidity <= MAX_INITIAL_LIQUIDITY);
 
@@ -157,11 +157,11 @@ program doo_prediction_market.aleo {
         public outcome_token_id: field,
         public amount: u64
     ) -> Final {
-        let bettor: address = self.caller;
+        let bettor: address = std::ctx::caller();
         let token_amount: u128 = amount as u128;
 
         let deposit: Final = credits.aleo::transfer_public_as_signer(
-            self.address,
+            std::ctx::addr(),
             amount
         );
         let mint: Final = token_registry.aleo::mint_public(
@@ -175,7 +175,7 @@ program doo_prediction_market.aleo {
             let market: Market = Mapping::get(markets, market_id);
             let expected_token_id: field = outcome ? market.yes_token_id : market.no_token_id;
             assert_eq(outcome_token_id, expected_token_id);
-            assert(block.height <= market.betting_deadline_block_height);
+            assert(std::ctx::block_height() <= market.betting_deadline_block_height);
             assert(amount > 0u64);
             assert(!Mapping::get_or_use(resolved, market_id, false));
 
@@ -228,7 +228,7 @@ program doo_prediction_market.aleo {
             let outcome: bool = resolve_binary_outcome_logic(reported_outcome, assertion_valid);
             assert_eq(reported_claim_hash, expected_claim_hash);
             assert_eq(market.betting_deadline_block_height, betting_deadline_block_height);
-            assert(block.height > market.betting_deadline_block_height);
+            assert(std::ctx::block_height() > market.betting_deadline_block_height);
             assert(!Mapping::get_or_use(resolved, market_id, false));
 
             let collateral: u128 = Mapping::get(collateral_pool, market_id);
@@ -255,7 +255,7 @@ program doo_prediction_market.aleo {
         public amount: u128,
         public payout_microcredits: u64
     ) -> Final {
-        let claimant: address = self.caller;
+        let claimant: address = std::ctx::caller();
         let burn: Final = token_registry.aleo::burn_public(
             outcome_token_id,
             claimant,

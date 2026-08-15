@@ -99,11 +99,16 @@ registry and skip the local workaround. Existing custom programs are upgraded
 by the configured administrator.
 
 The devnet is started through `../core/run_node.sh --install`, which delegates
-snarkOS installation to Leo. Current local validation used Leo `4.3.4`,
+snarkOS installation to Leo. Historical local validation used Leo `4.3.4`,
 snarkOS `4.8.1` with `test_network`, and the explicit 17-entry consensus
 schedule through height 20. The ignored local binary is only a compatible
 fallback when the macOS Xcode `libclang` runtime prevents Leo's installer from
 completing.
+
+The 2026-08-15 Testnet upgrade migrated manifests and source syntax to Leo
+`4.4.1`, whose snarkVM/snarkOS 4.9.0 cost rules match the current network.
+Leo 4.3.4 must not be used for public upgrades because it underestimates the
+post-activation deployment base fee.
 
 The original public Testnet deployment completed successfully. The 2026-08-15
 security upgrades and preserved-state verification are recorded in

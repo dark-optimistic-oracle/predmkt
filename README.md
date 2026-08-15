@@ -162,7 +162,7 @@ pnpm preview
 
 ## Aleo programs
 
-Requirements: Leo 4.3.4 or a compatible release.
+Requirements: Leo 4.4.1 (the pinned network-compatible release).
 
 ```bash
 ./contracts/build_all.sh

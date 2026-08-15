@@ -101,7 +101,9 @@ Verification time: 2026-08-15 07:04 EDT (computer local time).
   caller and signer against the administrator. No transaction or fee resulted
   from the rejected candidate.
 - Frontend: ESLint/static checks/build passed; 36/36 Vitest tests passed.
-- Contracts: 14/14 oracle and 13/13 market Leo tests passed (27/27 total).
+- Contracts: 14/14 oracle and 13/13 market Leo 4.4.1 tests passed (27/27 total)
+  after migration to the equivalent `std::ctx` syntax. The downloaded release
+  asset matched its official published SHA-256.
 - Devnet, Testnet, and Mainnet deployment builds compiled in dry-run mode.
 - Production and full dependency audits report zero known vulnerabilities.
 - The pre-upgrade Testnet snapshot showed both programs at edition 0 and

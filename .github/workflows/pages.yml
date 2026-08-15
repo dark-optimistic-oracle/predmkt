@@ -45,8 +45,8 @@ jobs:
       - name: Static security checks
         run: pnpm security:static
 
-      - name: Install Leo 4.3.4
-        run: cargo install leo-lang --version 4.3.4 --locked
+      - name: Install Leo 4.4.1
+        run: cargo install leo-lang --version 4.4.1 --locked
 
       - name: Test Leo contracts
         run: pnpm test:contracts
