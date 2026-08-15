@@ -186,3 +186,54 @@ plain-English explanations and JSON, then append the relevant dated session to
 this file and commit it. Preserve rejected and timed-out calls as well as
 accepted calls. Never replace a `walletRequestId` with an assumed on-chain ID,
 and never add private record plaintext or wallet secrets.
+
+## Security-audit experiment: 2026-08-15
+
+**What happened:** A fresh audit reviewed the React app, Shield transaction
+construction, browser audit journal, Aleo oracle and prediction-market source,
+deployment scripts, CI/Pages workflow, dependency graph, tests, tracked secret
+history, and the currently deployed Testnet programs. No wallet transaction was
+prepared, signed, or broadcast during this audit.
+
+The experiment ran from approximately `2026-08-15T10:09:00Z` through
+`2026-08-15T10:18:35Z`.
+
+### Local verification
+
+| Command or check | Result |
+|---|---|
+| `pnpm check` | Passed: lint, 35 of 35 browser/model tests, static security checks, TypeScript, and the production build. Wallet and provider responses in the unit tests were mocked, not live calls. |
+| `pnpm test:contracts` | Passed all 21 Leo helper tests: 10 oracle and 11 prediction-market tests. |
+| `pnpm deploy:check` | Devnet, Testnet, and Mainnet dry-run builds passed. No transaction was signed or broadcast. The public-network checks confirmed that canonical `token_registry.aleo` was queryable. |
+| `pnpm audit --prod` | No known production dependency vulnerabilities. |
+| `pnpm audit` | Reported 7 development-tool advisories: 1 critical, 3 high, and 3 moderate. |
+| Current and history-aware tracked-secret scans | No Aleo private key, seed-phrase assignment, wallet-password assignment, or PEM private key was found. `.env.private` remained ignored and mode `600`. |
+| Local integration precondition | No `snarkos` or Leo devnet process was running, so the broadcast integration script was not executed. |
+| GitHub Pages `HEAD` and index reads | Returned HTTP 200 and the current production asset hashes. HSTS was present; CSP, clickjacking protection, Referrer-Policy, Permissions-Policy, and `X-Content-Type-Options` were absent. |
+
+### Read-only Testnet program verification
+
+All reads used network `testnet` and endpoint
+`https://api.provable.com/v2`. They did not require a private key.
+
+1. `leo query program dark_optimistic_oracle.aleo -q` and
+   `leo query program doo_prediction_market.aleo -q` returned edition-0 Aleo
+   instructions. Whitespace-insensitive diffs against fresh local builds found
+   only the intentional constructor administrator substitution:
+   `aleo1a2k4a9phy4kklx2ad0aed0lgvyzaegf0gfp85uldzhjzn8tt05zsjmfjnf`.
+2. `curl -fsS https://api.provable.com/v2/testnet/program/dark_optimistic_oracle.aleo/latest_edition`
+   and `curl -fsS https://api.provable.com/v2/testnet/program/doo_prediction_market.aleo/latest_edition`
+   each returned `0`.
+3. `leo query program dark_optimistic_oracle.aleo --mapping-value fee_collector 0u8 -q`
+   returned the same administrator address. The existing Testnet oracle was
+   therefore initialized by the intended account.
+4. The `registered_tokens` read for DOOR token
+   `346688784394585735039324415800163929700021701423791533632764818774905958305field`
+   returned oracle program address
+   `aleo1nyflwg9mjfkfp2n9mtng0snxj9qrhahkjxp5l9pag4zxm3qrssrqwv8tml` as token
+   administrator and authorization party, with supply
+   `999999900000000u128` and maximum `10000000000000000u128`.
+
+The audit found security issues that require remediation before Mainnet. This
+entry records the experiment and public network evidence; it is not a claim
+that the application is secure or an independent third-party audit.
