@@ -153,6 +153,11 @@ cannot write or commit repository files, so reviewed exports must still be
 appended and committed deliberately. The complete operation inventory and
 retained call evidence live in [LOG.md](LOG.md).
 
+`AGENTS.md` makes updating `LOG.md` a required completion step for future
+experiments, QA runs, deployments, and Aleo call sequences. It also defines the
+evidence fields and secret-redaction rules that future contributors and coding
+agents must follow.
+
 ## Live Testnet browser QA (2026-08-13)
 
 The dedicated public QA account

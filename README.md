@@ -125,7 +125,9 @@ logged by the site.
 Every redacted entry is also retained automatically in browser storage. Use the
 site's **Download audit LOG.md** control to export exact JSON evidence with a
 plain-English explanation for each operation. The complete call inventory and
-retained live Testnet record are in [LOG.md](LOG.md).
+retained live Testnet record are in [LOG.md](LOG.md). Contributors and coding
+agents must follow [AGENTS.md](AGENTS.md) and commit the relevant log entries
+with every experiment or Aleo call sequence.
 
 ### Live Testnet QA
 
