@@ -1,4 +1,4 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 set -euo pipefail
 
 LEO_BIN="${LEO_BIN:-leo}"
@@ -12,8 +12,8 @@ if [[ "$LEO_VERSION" != "4.4.1" ]]; then
   exit 1
 fi
 
-SCRIPT_DIR="${0:A:h}"
-PROJECT_ROOT="${SCRIPT_DIR:h}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 TEST_HOME="$(mktemp -d "${TMPDIR:-/tmp}/doo-predmkt-leo-tests.XXXXXX")"
 cleanup() {
   rm -rf "$TEST_HOME"

@@ -1,8 +1,8 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="${0:A:h}"
-PROJECT_ROOT="${SCRIPT_DIR:h}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 PUBLIC_ENV_FILE="${PUBLIC_ENV_FILE:-${ENV_FILE:-${PROJECT_ROOT}/.env.devnet}}"
 PRIVATE_ENV_FILE="${PRIVATE_ENV_FILE:-${PROJECT_ROOT}/.env.private}"
 

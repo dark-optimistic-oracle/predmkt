@@ -1,8 +1,8 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="${0:A:h}"
-PROJECT_ROOT="${SCRIPT_DIR:h}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 NETWORK_NAME="${1:-}"
 shift || true
 
@@ -111,7 +111,7 @@ if [[ "$DRY_RUN" != "true" ]]; then
     echo "The target-network private key in .env.private and PROTOCOL_ADMIN are required."
     exit 1
   fi
-  if [[ ! "$PROTOCOL_ADMIN" =~ '^aleo1[a-z0-9]{58}$' ]]; then
+  if [[ ! "$PROTOCOL_ADMIN" =~ ^aleo1[a-z0-9]{58}$ ]]; then
     echo "PROTOCOL_ADMIN is not a valid Aleo address."
     exit 1
   fi
@@ -205,7 +205,7 @@ program_status() {
         "${ENDPOINT}/${API_NETWORK}/program/${program_id}/latest_edition"
     )" || edition_code="000"
     edition_value="$(<"$response_body")"
-    if [[ "$edition_code" == "200" && "$edition_value" == <-> ]]; then
+    if [[ "$edition_code" == "200" && "$edition_value" =~ ^[0-9]+$ ]]; then
       echo "200"
       return
     fi

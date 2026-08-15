@@ -1,5 +1,5 @@
-#!/bin/zsh
+#!/usr/bin/env bash
 set -euo pipefail
 
-SCRIPT_DIR="${0:A:h}"
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 exec "${SCRIPT_DIR}/scripts/deploy_common.sh" devnet "$@"

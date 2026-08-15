@@ -94,7 +94,9 @@ The market creates a tokenized YES/NO pair, accepts neutral collateral, routes o
 
 ## Local frontend
 
-Requirements: Node.js 22 or newer and pnpm.
+Requirements: Node.js 22 or newer and pnpm. Contract tests and deployment
+checks additionally require Bash and Leo 4.4.1; set `LEO_BIN` when that binary
+is not named `leo` or is not on `PATH`.
 
 ```bash
 pnpm install

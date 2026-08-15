@@ -355,3 +355,13 @@ same contract tests and three network deployment dry runs. This replaces a
 redundant source compilation in CI; it does not alter contract artifacts or
 skip any validation. No Aleo read, proof, signed transaction, or broadcast was
 performed by this workflow-only change.
+
+The first Linux run passed frontend lint, 36/36 frontend tests, dependency and
+static security checks, and Leo installation, then stopped because the
+contract-test entrypoint named the macOS-only `/bin/zsh` path. The entrypoint
+and every related deployment/build/Devnet integration script were converted to
+portable Bash. Local re-verification with Leo 4.4.1 passed 10/10 oracle tests,
+13/13 prediction-market tests, and Devnet, Testnet, and Mainnet deployment
+builds. The latter were explicit dry runs: they compiled sources and made only
+public program-availability/dependency reads; they did not load a private key,
+create a proof, sign, submit, or broadcast a transaction, and spent no credits.

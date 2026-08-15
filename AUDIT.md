@@ -153,3 +153,10 @@ Exact transaction, abort, balance, and state evidence is in `LOG.md` and
 `DEPLOYMENTS.md`. CI downloads the official Leo 4.4.1 Linux release archive and
 verifies its pinned SHA-256 before running contract and deployment checks; it
 does not spend Pages build time compiling the toolchain from source.
+
+The first binary-based Linux Pages run exposed a portability defect before any
+deployment step: repository entrypoints used a macOS-specific `/bin/zsh`
+shebang. All contract-test, deployment, build, and local Devnet integration
+entrypoints now use portable Bash path resolution. Shell parsing, 10/10 oracle
+tests, 13/13 market tests, and unsigned Devnet, Testnet, and Mainnet deployment
+builds passed again with Leo 4.4.1. No transaction was signed or broadcast.
