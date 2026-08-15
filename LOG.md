@@ -365,3 +365,12 @@ portable Bash. Local re-verification with Leo 4.4.1 passed 10/10 oracle tests,
 builds. The latter were explicit dry runs: they compiled sources and made only
 public program-availability/dependency reads; they did not load a private key,
 create a proof, sign, submit, or broadcast a transaction, and spent no credits.
+
+The next Pages run reached the portable Bash harness but confirmed that the
+hosted runner does not supply the harness's former `rg` command. The scripts
+now use standard `grep`. The exact contract suite then passed in a clean Ubuntu
+24.04 amd64 container where both `zsh` and `rg` were absent, and all three
+unsigned network deployment builds passed again locally. These CI and container
+experiments used public source and read-only dependency endpoints only; no
+secret environment file was mounted or loaded and no Aleo transaction was
+created.

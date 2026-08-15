@@ -6,7 +6,7 @@ if ! command -v "$LEO_BIN" >/dev/null 2>&1; then
   echo "Leo is required. Install Leo 4.4.1 or set LEO_BIN to that binary."
   exit 1
 fi
-LEO_VERSION="$("$LEO_BIN" --version 2>/dev/null | rg -o '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
+LEO_VERSION="$("$LEO_BIN" --version 2>/dev/null | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
 if [[ "$LEO_VERSION" != "4.4.1" ]]; then
   echo "Leo 4.4.1 is required for the current program manifests; found ${LEO_VERSION:-unknown}."
   exit 1

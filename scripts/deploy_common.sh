@@ -129,7 +129,7 @@ if [[ "$NETWORK_NAME" == "mainnet" && "$DRY_RUN" != "true" ]]; then
   fi
 fi
 
-for command_name in curl rg perl mktemp; do
+for command_name in curl grep perl mktemp; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     echo "Missing required command: ${command_name}"
     exit 1
@@ -141,14 +141,14 @@ if ! command -v "$LEO_BIN" >/dev/null 2>&1; then
   echo "Leo is required. Install Leo 4.4.1 or set LEO_BIN to that binary."
   exit 1
 fi
-LEO_VERSION="$("$LEO_BIN" --version 2>/dev/null | rg -o '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
+LEO_VERSION="$("$LEO_BIN" --version 2>/dev/null | grep -Eo '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
 if [[ "$LEO_VERSION" != "4.4.1" ]]; then
   echo "Leo 4.4.1 is required for the current program manifests; found ${LEO_VERSION:-unknown}."
   exit 1
 fi
 
 if [[ "$DRY_RUN" != "true" ]]; then
-  DERIVED_ADMIN="$("$LEO_BIN" account import "$PRIVATE_KEY" 2>/dev/null | rg -o 'aleo1[a-z0-9]{58}' | tail -1)"
+  DERIVED_ADMIN="$("$LEO_BIN" account import "$PRIVATE_KEY" 2>/dev/null | grep -Eo 'aleo1[a-z0-9]{58}' | tail -1)"
   if [[ "$DERIVED_ADMIN" != "$PROTOCOL_ADMIN" ]]; then
     echo "PRIVATE_KEY does not control PROTOCOL_ADMIN; refusing deployment."
     exit 1
@@ -170,14 +170,14 @@ if [[ -n "$PROTOCOL_ADMIN" ]]; then
     "$DEPLOY_ROOT/contracts/prediction-market/src/main.leo" \
     "$DEPLOY_ROOT/contracts/token-registry-workaround/src/main.leo"; do
     perl -0pi -e "s/\@admin\\(address\\s*=\\s*\"aleo1[a-z0-9]{58}\"\\)/\@admin(address=\"${PROTOCOL_ADMIN}\")/g" "$source_file"
-    if ! rg -q "@admin\\(address=\"${PROTOCOL_ADMIN}\"\\)" "$source_file"; then
+    if ! grep -Eq "@admin\\(address=\"${PROTOCOL_ADMIN}\"\\)" "$source_file"; then
       echo "Failed to set the upgrade administrator in ${source_file}."
       exit 1
     fi
   done
   oracle_source="$DEPLOY_ROOT/contracts/oracle/src/main.leo"
   perl -0pi -e "s/const PROTOCOL_ADMIN: address = aleo1[a-z0-9]{58};/const PROTOCOL_ADMIN: address = ${PROTOCOL_ADMIN};/g" "$oracle_source"
-  if ! rg -q "const PROTOCOL_ADMIN: address = ${PROTOCOL_ADMIN};" "$oracle_source"; then
+  if ! grep -Fq "const PROTOCOL_ADMIN: address = ${PROTOCOL_ADMIN};" "$oracle_source"; then
     echo "Failed to set the oracle initialization administrator."
     exit 1
   fi
@@ -193,7 +193,7 @@ program_status() {
       return
     }
   if [[ "$NETWORK_NAME" == "devnet" && "$response_code" == "500" ]] &&
-    rg -q "Missing program for ID ${program_id}" "$response_body"; then
+    grep -Fq "Missing program for ID ${program_id}" "$response_body"; then
     echo "404"
     return
   fi
@@ -304,7 +304,7 @@ run_checked() {
   local verification_attempt
   transaction_id="$(
     printf '%s\n' "$command_output" |
-      rg -o 'at1[a-z0-9]+' |
+      grep -Eo 'at1[a-z0-9]+' |
       head -1 ||
       true
   )"

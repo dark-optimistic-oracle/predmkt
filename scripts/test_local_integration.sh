@@ -93,7 +93,7 @@ run_execution() {
 
   transaction_id="$(
     printf '%s\n' "$execution_output" |
-      rg -o 'at1[[:alnum:]]+' |
+      grep -Eo 'at1[[:alnum:]]+' |
       head -n 1 ||
       true
   )"

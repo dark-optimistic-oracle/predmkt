@@ -117,7 +117,8 @@ after checking the pinned SHA-256, then runs both contract suites and all three
 network dry builds. This avoids an unnecessary compiler build in every Pages
 deployment. The repository's test, deployment, build, and local Devnet
 integration entrypoints use portable Bash rather than a macOS-specific shell
-path, so the same commands run on the Ubuntu Pages runner.
+path, and use standard `grep` rather than assuming `rg` is installed, so the
+same commands run on the Ubuntu Pages runner.
 
 The original public Testnet deployment completed successfully. The 2026-08-15
 security upgrades and preserved-state verification are recorded in
