@@ -112,7 +112,7 @@ pnpm security:audit
 
 The browser suite covers input parsing, API handling, every frontend transaction family, all binary assertion-result combinations, deadline failures, claim binding, payout conservation, rounding, and repeat-redemption rejection. `pnpm test:contracts` runs the Leo unit tests for oracle and market rules. The deployment check compiles all three programs for each target without signing or broadcasting.
 
-The 2026-08-15 remediation result is 36/36 frontend/model tests and 27/27 Leo
+The 2026-08-15 remediation result is 36/36 frontend/model tests and 23/23 Leo
 tests, with zero known production or development dependency vulnerabilities.
 See [AUDIT.md](AUDIT.md) for the exact scope and limitations.
 
@@ -217,16 +217,22 @@ administrator, and put the funded key in `TESTNET_PRIVATE_KEY` inside the same
 ignored `.env.private`. Then run:
 
 ```bash
-./deploy_testnet.sh --dry-run
-./deploy_testnet.sh
+LEO_BIN=/path/to/leo-4.4.1 ./deploy_testnet.sh --dry-run
+LEO_BIN=/path/to/leo-4.4.1 ./deploy_testnet.sh
 ```
 
 The script requires the canonical public token registry, skips the local workaround, and deploys missing custom programs or performs administrator-authorized upgrades.
+It requires Leo 4.4.1 and refuses older fee rules. `--market-only` safely skips
+an already deployed public oracle when a compatible market upgrade must be
+completed independently; the option is refused on devnet.
 If a coordinated deployment was interrupted only after an accepted transaction,
 rerun it with `--resume`; existing programs are then verified and skipped rather
 than upgraded unnecessarily.
 
-The oracle and prediction market are now deployed on Testnet. Their accepted
+The oracle is deployed and initialized at edition 0. The audited oracle upgrade
+is committed but still awaits a target block with sufficient consensus
+certificate capacity. The prediction market was upgraded in place to edition
+1 with its prior market and accounting state preserved. Their accepted
 transactions, deterministic program addresses, administrator, funding relay,
 and local-devnet roles are recorded in [DEPLOYMENTS.md](DEPLOYMENTS.md).
 

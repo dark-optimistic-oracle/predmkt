@@ -112,3 +112,42 @@ Verification time: 2026-08-15 07:04 EDT (computer local time).
 
 This is an engineering remediation review, not a formal proof, economic audit,
 or independent third-party assessment.
+
+## 2026-08-15 — Upgrade and preserved-state verification
+
+Verification time: 2026-08-15 08:12 EDT (computer local time).
+
+### Prediction-market upgrade
+
+The first corrected market candidate was rejected locally before broadcast
+because adding `settlement_assertions` changed the compiler-selected finalize
+register order for `settle_market`. The source now captures the actual assertion
+ID in the same register position as edition 0. Generated Aleo instructions were
+compared directly: transition inputs and all seven finalize input types/order
+match edition 0 exactly. No fee or transaction resulted from the rejected local
+candidate.
+
+The compatible candidate passed 13/13 market tests and was accepted as edition
+1 in transaction
+`at1gxza4mhcrendchvguswhyvjvq3ga5pc3wcl7948qvfgzs3g705yslssaal`.
+The accepted public fee was `12.687318` credits. Post-upgrade reads preserved
+market `187031921field`, collateral `300000u128`, YES supply `200000u128`, NO
+supply `100000u128`, and `resolved = false`; the new settlement-assertion entry
+is correctly absent until settlement. Findings PM-2026-08-15-02 and
+PM-2026-08-15-03 are therefore fixed in the live Testnet market.
+
+### Oracle coordination
+
+The bundled oracle source is byte-equivalent to the core candidate and passes
+10/10 Leo 4.4.1 tests. Its interface and state layout remain compatible with
+edition 0. Testnet repeatedly aborted the candidate in blocks whose consensus
+certificate count was below the 47 required by its `3481397` combined density;
+provider HTTP 522 failures also occurred before some broadcasts. Aborted
+transactions charged no fee and changed no state. Consequently
+PM-2026-08-15-01 and PM-2026-08-15-04 are fixed in source but remain pending on
+the live oracle, which is still edition 0.
+
+The deployment wrapper now supports `--market-only` for this safe partial
+upgrade path and refuses that option on devnet. Mainnet was not broadcast.
+Exact transaction, abort, balance, and state evidence is in `LOG.md` and
+`DEPLOYMENTS.md`.

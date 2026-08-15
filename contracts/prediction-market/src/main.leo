@@ -226,6 +226,11 @@ program doo_prediction_market.aleo {
                 ? market.yes_claim_hash
                 : market.no_claim_hash;
             let outcome: bool = resolve_binary_outcome_logic(reported_outcome, assertion_valid);
+            // Capture the actual assertion ID in the same finalize-register
+            // position used by edition 0. Upgrades require the existing
+            // finalize input interface to remain bytecode-compatible even
+            // though this value is no longer constrained to the suggested ID.
+            let settlement_assertion_id: field = assertion_id;
             assert_eq(reported_claim_hash, expected_claim_hash);
             assert_eq(market.betting_deadline_block_height, betting_deadline_block_height);
             assert(std::ctx::block_height() > market.betting_deadline_block_height);
@@ -241,7 +246,7 @@ program doo_prediction_market.aleo {
             Mapping::set(resolved, market_id, true);
             Mapping::set(resolutions, market_id, outcome);
             Mapping::set(settlement_collateral, market_id, collateral);
-            Mapping::set(settlement_assertions, market_id, assertion_id);
+            Mapping::set(settlement_assertions, market_id, settlement_assertion_id);
             verify.run();
         };
     }

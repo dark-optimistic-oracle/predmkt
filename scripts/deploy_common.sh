@@ -7,7 +7,7 @@ NETWORK_NAME="${1:-}"
 shift || true
 
 usage() {
-  echo "Usage: deploy_{local_devnet|testnet|mainnet}.sh [--dry-run] [--resume] [--confirm-mainnet]"
+  echo "Usage: deploy_{local_devnet|testnet|mainnet}.sh [--dry-run] [--resume] [--market-only] [--confirm-mainnet]"
   echo "Set PUBLIC_ENV_FILE or PRIVATE_ENV_FILE to override the default environment files."
 }
 
@@ -19,6 +19,7 @@ fi
 DRY_RUN=false
 RESUME=false
 CONFIRM_MAINNET=false
+MARKET_ONLY=false
 for argument in "$@"; do
   case "$argument" in
     --dry-run)
@@ -29,6 +30,9 @@ for argument in "$@"; do
       ;;
     --resume)
       RESUME=true
+      ;;
+    --market-only)
+      MARKET_ONLY=true
       ;;
     --help|-h)
       usage
@@ -41,6 +45,11 @@ for argument in "$@"; do
       ;;
   esac
 done
+
+if [[ "$NETWORK_NAME" == "devnet" && "$MARKET_ONLY" == "true" ]]; then
+  echo "--market-only is for an already deployed public oracle; it is not supported on disposable devnet."
+  exit 2
+fi
 
 DEFAULT_PUBLIC_ENV_FILE="${PROJECT_ROOT}/.env.${NETWORK_NAME}"
 PUBLIC_ENV_FILE="${PUBLIC_ENV_FILE:-${ENV_FILE:-$DEFAULT_PUBLIC_ENV_FILE}}"
@@ -120,15 +129,26 @@ if [[ "$NETWORK_NAME" == "mainnet" && "$DRY_RUN" != "true" ]]; then
   fi
 fi
 
-for command_name in leo curl rg perl mktemp; do
+for command_name in curl rg perl mktemp; do
   if ! command -v "$command_name" >/dev/null 2>&1; then
     echo "Missing required command: ${command_name}"
     exit 1
   fi
 done
 
+LEO_BIN="${LEO_BIN:-leo}"
+if ! command -v "$LEO_BIN" >/dev/null 2>&1; then
+  echo "Leo is required. Install Leo 4.4.1 or set LEO_BIN to that binary."
+  exit 1
+fi
+LEO_VERSION="$("$LEO_BIN" --version 2>/dev/null | rg -o '[0-9]+\.[0-9]+\.[0-9]+' | head -1)"
+if [[ "$LEO_VERSION" != "4.4.1" ]]; then
+  echo "Leo 4.4.1 is required for the current program manifests; found ${LEO_VERSION:-unknown}."
+  exit 1
+fi
+
 if [[ "$DRY_RUN" != "true" ]]; then
-  DERIVED_ADMIN="$(leo account import "$PRIVATE_KEY" 2>/dev/null | rg -o 'aleo1[a-z0-9]{58}' | tail -1)"
+  DERIVED_ADMIN="$("$LEO_BIN" account import "$PRIVATE_KEY" 2>/dev/null | rg -o 'aleo1[a-z0-9]{58}' | tail -1)"
   if [[ "$DERIVED_ADMIN" != "$PROTOCOL_ADMIN" ]]; then
     echo "PRIVATE_KEY does not control PROTOCOL_ADMIN; refusing deployment."
     exit 1
@@ -212,7 +232,7 @@ if [[ "$NETWORK_NAME" == "devnet" ]]; then
   contracts_to_build=(token-registry-workaround oracle prediction-market)
 fi
 for contract_name in "${contracts_to_build[@]}"; do
-  leo --home "$DEPLOY_ROOT/.aleo" build \
+  "$LEO_BIN" --home "$DEPLOY_ROOT/.aleo" build \
     --network "$LEO_NETWORK" \
     --endpoint "$BUILD_ENDPOINT" \
     --path "$DEPLOY_ROOT/contracts/$contract_name"
@@ -344,7 +364,7 @@ deploy_or_upgrade() {
         "Upgrade ${program_id}" \
         "Upgrade confirmed!" \
         deploy \
-        leo upgrade "${COMMON_ARGS[@]}" --path "$package_path" "$@"
+        "$LEO_BIN" upgrade "${COMMON_ARGS[@]}" --path "$package_path" "$@"
     fi
   elif [[ "$http_code" == "404" ]]; then
     DEPLOY_ACTION="deploy"
@@ -352,7 +372,7 @@ deploy_or_upgrade() {
       "Deploy ${program_id}" \
       "Deployment confirmed!" \
       deploy \
-      leo deploy "${COMMON_ARGS[@]}" --path "$package_path" "$@"
+      "$LEO_BIN" deploy "${COMMON_ARGS[@]}" --path "$package_path" "$@"
     wait_for_program "$program_id"
   else
     echo "Unable to determine ${program_id} state at ${ENDPOINT} (HTTP ${http_code})."
@@ -369,13 +389,13 @@ initialize_program() {
       "Initialize ${program_name}" \
       "Execution confirmed!" \
       execute \
-      leo execute initialize "${COMMON_ARGS[@]}" --path "$package_path"
+      "$LEO_BIN" execute initialize "${COMMON_ARGS[@]}" --path "$package_path"
   else
     run_checked \
       "Initialize ${program_name}" \
       "Execution confirmed!" \
       execute \
-      leo execute "${program_name}::initialize" "${COMMON_ARGS[@]}" --no-local
+      "$LEO_BIN" execute "${program_name}::initialize" "${COMMON_ARGS[@]}" --no-local
   fi
 }
 
@@ -414,10 +434,18 @@ if [[ "$NETWORK_NAME" == "devnet" ]]; then
     3443843282313283355522573239085696902919850365217539366784739393210722344986field
 fi
 
-deploy_or_upgrade \
-  dark_optimistic_oracle.aleo \
-  "$DEPLOY_ROOT/contracts/oracle" \
-  --skip token_registry.aleo
+if [[ "$MARKET_ONLY" == "true" ]]; then
+  if [[ "$(program_status dark_optimistic_oracle.aleo)" != "200" ]]; then
+    echo "--market-only requires an existing oracle on ${NETWORK_NAME}."
+    exit 1
+  fi
+  echo "dark_optimistic_oracle.aleo already exists; --market-only leaves its edition unchanged."
+else
+  deploy_or_upgrade \
+    dark_optimistic_oracle.aleo \
+    "$DEPLOY_ROOT/contracts/oracle" \
+    --skip token_registry.aleo
+fi
 ensure_initialized \
   dark_optimistic_oracle.aleo \
   "$DEPLOY_ROOT/contracts/oracle" \

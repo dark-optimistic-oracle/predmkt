@@ -74,7 +74,7 @@ pnpm audit
 Current results:
 
 - 36/36 browser and lifecycle unit tests pass.
-- 27/27 Leo unit tests pass.
+- 23/23 Leo unit tests pass (10 oracle and 13 prediction-market).
 - ESLint, static security checks, TypeScript, and the production Vite build
   pass.
 - Devnet, Testnet, and Mainnet dry-run builds pass without signing or
@@ -96,7 +96,9 @@ transaction returned for a rejected execution is not treated as confirmation.
 `deploy_local_devnet.sh` deploys the local registry, oracle, and market in that
 order. `deploy_testnet.sh` and `deploy_mainnet.sh` require the canonical
 registry and skip the local workaround. Existing custom programs are upgraded
-by the configured administrator.
+by the configured administrator. All deployment paths require Leo 4.4.1.
+`--market-only` is a guarded public-network recovery path that preserves an
+existing oracle edition while upgrading the market; it is refused on devnet.
 
 The devnet is started through `../core/run_node.sh --install`, which delegates
 snarkOS installation to Leo. Historical local validation used Leo `4.3.4`,
@@ -115,8 +117,10 @@ security upgrades and preserved-state verification are recorded in
 `DEPLOYMENTS.md`, `LOG.md`, and `AUDIT.md`:
 
 - `dark_optimistic_oracle.aleo`: edition `0`, initialized against canonical
-  `token_registry.aleo`.
-- `doo_prediction_market.aleo`: edition `0`.
+  `token_registry.aleo`; the compatible security candidate is pending a block
+  with enough consensus V18 deployment capacity.
+- `doo_prediction_market.aleo`: accepted edition `1`, with existing market and
+  accounting mappings preserved.
 - Shared dedicated administrator and oracle fee collector:
   `aleo1a2k4a9phy4kklx2ad0aed0lgvyzaegf0gfp85uldzhjzn8tt05zsjmfjnf`.
 
