@@ -231,10 +231,10 @@ If a coordinated deployment was interrupted only after an accepted transaction,
 rerun it with `--resume`; existing programs are then verified and skipped rather
 than upgraded unnecessarily.
 
-The oracle is deployed and initialized at edition 0. The audited oracle upgrade
-is committed but still awaits a target block with sufficient consensus
-certificate capacity. The prediction market was upgraded in place to edition
-1 with its prior market and accounting state preserved. Their accepted
+The oracle and prediction market are both deployed at edition 1. The audited
+oracle upgrade was accepted in transaction
+`at1900gz2klm9we2deqarpv2fpqhnjqjr3cvr43stxq4525l6s9zupq6r0v5p` without
+rerunning initialization; both upgrades preserved prior state. Their accepted
 transactions, deterministic program addresses, administrator, funding relay,
 and local-devnet roles are recorded in [DEPLOYMENTS.md](DEPLOYMENTS.md).
 

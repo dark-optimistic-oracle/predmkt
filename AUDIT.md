@@ -162,3 +162,29 @@ resolution and standard `grep`. A clean Ubuntu 24.04 amd64 container without
 `zsh` or `rg` passed 10/10 oracle and 13/13 market tests; shell parsing and
 unsigned Devnet, Testnet, and Mainnet deployment builds also passed with Leo
 4.4.1. No transaction was signed or broadcast.
+
+## 2026-08-15 — Coordinated live oracle activation verification
+
+Verification time: 2026-08-15 10:18 EDT (computer local time).
+
+The bundled oracle candidate was accepted as Testnet edition `1` in deployment
+transaction
+`at1900gz2klm9we2deqarpv2fpqhnjqjr3cvr43stxq4525l6s9zupq6r0v5p`. Block
+`18745064` contained 78 certificates, exceeding the 47 required by the
+candidate's `3481397` combined deployment density. The accepted public fee was
+`29.406397` credits, and the shared administrator balance changed exactly from
+`949027761u64` to `919621364u64`.
+
+Independent reads confirmed the signer/caller initialization guards and the
+voting-right purchase cutoff in the accepted source. The existing fee collector
+and QA assertion `187031922field` remained unchanged, and initialization was
+correctly skipped. The prediction-market program remains edition `1`; its
+market and accounting state were not modified by the oracle upgrade. Findings
+PM-2026-08-15-01 and PM-2026-08-15-04 are therefore active on live Testnet, not
+only fixed in source.
+
+The prediction-market frontend passed lint, static security checks, all 36
+Vitest tests, TypeScript, and the production build after activation. The oracle
+suite passed 10/10 Leo tests before submission. Previously accepted residual
+privacy, economic, administration, and client-log risks remain unchanged, and
+Mainnet remains locked.

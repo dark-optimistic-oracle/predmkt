@@ -1,6 +1,6 @@
 # Network addresses and deployments
 
-Last verified: 2026-08-15 08:12 EDT
+Last verified: 2026-08-15 10:18 EDT
 
 No private key is recorded here. Real keys remain only in the ignored,
 mode-`600` `.env.private` file.
@@ -15,15 +15,14 @@ mode-`600` `.env.private` file.
 | `aleo1rhgdu77hgyqd3xjj8ucu3jj9r2krwz6mnzyd80gncr5fxcwlh5rsvzp9px` | Retained generic devnet account that temporarily received faucet credits and relayed them to the dedicated Testnet account. It is not a public-network administrator. Its retained key is `DEVNET_PRIVATE_KEY`. |
 | Connected Shield wallet address | The current application user: market creator, trader, reporter, disputer, voter, settler, or redeemer according to the submitted transition. This address is selected by the browser extension and is never configured in the repository. Fund it separately when testing user transactions. |
 
-After the accepted edition-1 market upgrade and fee-free oracle aborts, the
-dedicated account had `949.027761` public credits. This is a point-in-time
-value.
+After the accepted edition-1 market and oracle upgrades, the dedicated account
+had `919.621364` public credits. This is a point-in-time value.
 
 ### Programs
 
 | Program | Deterministic program address | Testnet state |
 | --- | --- | --- |
-| `dark_optimistic_oracle.aleo` | `aleo1nyflwg9mjfkfp2n9mtng0snxj9qrhahkjxp5l9pag4zxm3qrssrqwv8tml` | Deployed at edition `0` and initialized. The compatible security candidate is awaiting a block with sufficient deployment capacity. |
+| `dark_optimistic_oracle.aleo` | `aleo1nyflwg9mjfkfp2n9mtng0snxj9qrhahkjxp5l9pag4zxm3qrssrqwv8tml` | Upgraded in place to edition `1`; initialization and existing mappings were preserved. |
 | `doo_prediction_market.aleo` | `aleo1mrr7u3lyqmgewq4gy878m35fugqzth9lvqr5vmhsrzek49ra4cxqh27v3n` | Upgraded in place to edition `1`; existing market state was preserved. |
 | `token_registry.aleo` | `aleo1m50rc7x4cgsr5y8h2s3d6f7rzm5tvz5zqcz7ak55gmkv76pgu5qsuyq0k7` | Canonical public dependency, edition `1` when deployment was performed; not deployed or administered by this project. |
 
@@ -42,6 +41,7 @@ represents an absent mapping value; it is not an account to fund.
 | Initialize the oracle and register DOOR | `at13teruy8sz5y3awfhlxhz45caz4er85eaed4ga4g5x7f6545rwupqd3a4vv` |
 | Deploy `doo_prediction_market.aleo` | `at1vfruryar6rztzd3ex45cmhyda2h2pxzm8x6acd43lferxusfaq8sget384` |
 | Upgrade `doo_prediction_market.aleo` to edition 1 | `at1gxza4mhcrendchvguswhyvjvq3ga5pc3wcl7948qvfgzs3g705yslssaal` |
+| Upgrade `dark_optimistic_oracle.aleo` to edition 1 | `at1900gz2klm9we2deqarpv2fpqhnjqjr3cvr43stxq4525l6s9zupq6r0v5p` |
 
 The edition-1 market upgrade paid a public fee of `12.687318` credits. Its fee
 transition is
@@ -52,8 +52,13 @@ YES supply `200000u128`, NO supply `100000u128`, and `resolved = false`. The new
 
 Eight oracle candidates were aborted by consensus V18 after landing in blocks
 with fewer than the 47 certificates required by the candidate's combined
-density. Those aborts charged no fee and left the oracle at edition 0. Exact
-public IDs, blocks, and capacity evidence are in [LOG.md](LOG.md).
+density. Those aborts charged no fee. The next controlled candidate landed in
+78-certificate block `18745064` and was accepted as edition 1 in transaction
+`at1900gz2klm9we2deqarpv2fpqhnjqjr3cvr43stxq4525l6s9zupq6r0v5p`. It paid
+`29.406397` public credits through fee transition
+`au1w9s7u95tn5h0lgn9gf5nvvwm4sh3gymjzpzprkvckfg2ypu2qq8q8ap0e4`. Exact
+public IDs, blocks, capacity, and preserved-state evidence are in
+[LOG.md](LOG.md).
 
 The DOOR token ID is
 `346688784394585735039324415800163929700021701423791533632764818774905958305field`.

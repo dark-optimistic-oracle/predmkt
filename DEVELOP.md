@@ -124,9 +124,8 @@ The original public Testnet deployment completed successfully. The 2026-08-15
 security upgrades and preserved-state verification are recorded in
 `DEPLOYMENTS.md`, `LOG.md`, and `AUDIT.md`:
 
-- `dark_optimistic_oracle.aleo`: edition `0`, initialized against canonical
-  `token_registry.aleo`; the compatible security candidate is pending a block
-  with enough consensus V18 deployment capacity.
+- `dark_optimistic_oracle.aleo`: accepted edition `1`, initialized against
+  canonical `token_registry.aleo`, with its mappings preserved.
 - `doo_prediction_market.aleo`: accepted edition `1`, with existing market and
   accounting mappings preserved.
 - Shared dedicated administrator and oracle fee collector:
