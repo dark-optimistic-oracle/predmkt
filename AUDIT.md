@@ -95,6 +95,11 @@ Verification time: 2026-08-15 07:04 EDT (computer local time).
 - Program IDs and every existing struct, record, and mapping layout are
   unchanged. The market adds one mapping without rewriting existing markets;
   the stored assertion ID remains a backwards-compatible suggested default.
+- A first live oracle upgrade attempt was rejected by Leo before broadcast
+  because the candidate removed an existing initializer finalize input. The
+  initializer now preserves the historical captured caller and verifies both
+  caller and signer against the administrator. No transaction or fee resulted
+  from the rejected candidate.
 - Frontend: ESLint/static checks/build passed; 36/36 Vitest tests passed.
 - Contracts: 14/14 oracle and 13/13 market Leo tests passed (27/27 total).
 - Devnet, Testnet, and Mainnet deployment builds compiled in dry-run mode.
