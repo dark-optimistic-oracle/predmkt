@@ -346,3 +346,12 @@ Final local verification completed after the source and documentation changes:
 To retry the oracle safely, install Leo 4.4.1 and run
 `LEO_BIN=/path/to/leo-4.4.1 ./deploy_testnet.sh` from `core`. Confirm edition
 1 and the preserved mappings before attempting any later edition.
+
+## 2026-08-15 08:29 EDT — Pages release workflow verification
+
+The GitHub Pages workflow was changed to download the official Leo 4.4.1
+x86_64 Linux release archive and verify its pinned SHA-256 before running the
+same contract tests and three network deployment dry runs. This replaces a
+redundant source compilation in CI; it does not alter contract artifacts or
+skip any validation. No Aleo read, proof, signed transaction, or broadcast was
+performed by this workflow-only change.

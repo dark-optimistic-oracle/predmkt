@@ -150,4 +150,6 @@ the live oracle, which is still edition 0.
 The deployment wrapper now supports `--market-only` for this safe partial
 upgrade path and refuses that option on devnet. Mainnet was not broadcast.
 Exact transaction, abort, balance, and state evidence is in `LOG.md` and
-`DEPLOYMENTS.md`.
+`DEPLOYMENTS.md`. CI downloads the official Leo 4.4.1 Linux release archive and
+verifies its pinned SHA-256 before running contract and deployment checks; it
+does not spend Pages build time compiling the toolchain from source.

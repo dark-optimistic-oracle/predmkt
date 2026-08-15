@@ -112,6 +112,11 @@ The 2026-08-15 Testnet upgrade migrated manifests and source syntax to Leo
 Leo 4.3.4 must not be used for public upgrades because it underestimates the
 post-activation deployment base fee.
 
+GitHub Actions installs the official Leo 4.4.1 x86_64 Linux release archive
+after checking the pinned SHA-256, then runs both contract suites and all three
+network dry builds. This avoids an unnecessary compiler build in every Pages
+deployment.
+
 The original public Testnet deployment completed successfully. The 2026-08-15
 security upgrades and preserved-state verification are recorded in
 `DEPLOYMENTS.md`, `LOG.md`, and `AUDIT.md`:

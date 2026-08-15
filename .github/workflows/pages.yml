@@ -46,7 +46,20 @@ jobs:
         run: pnpm security:static
 
       - name: Install Leo 4.4.1
-        run: cargo install leo-lang --version 4.4.1 --locked
+        env:
+          LEO_ARCHIVE_SHA256: 7d87e59234881bc936e7a6c70d275bf8c536b88c2a449f7c7d1456822d75a3d5
+        run: |
+          leo_dir="$RUNNER_TEMP/leo-4.4.1"
+          leo_archive="$RUNNER_TEMP/leo-4.4.1.zip"
+          mkdir -p "$leo_dir"
+          curl -fsSL \
+            --output "$leo_archive" \
+            https://github.com/ProvableHQ/leo/releases/download/leo-lang-v4.4.1/leo-lang-v4.4.1-x86_64-unknown-linux-gnu.zip
+          echo "$LEO_ARCHIVE_SHA256  $leo_archive" | sha256sum --check --strict
+          unzip -q "$leo_archive" -d "$leo_dir"
+          chmod 0755 "$leo_dir/leo"
+          echo "$leo_dir" >> "$GITHUB_PATH"
+          "$leo_dir/leo" --version
 
       - name: Test Leo contracts
         run: pnpm test:contracts
