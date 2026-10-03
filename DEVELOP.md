@@ -229,5 +229,13 @@ These patches unblock the existing audit gate without changing the Aleo tools
 or wallet package versions. The social preview is public/og-verity.png; its
 heading and subtitle were edited using the built-in image generation tool.
 
+Pages run 37092030322 deployed commit 9b87f98 successfully. Chrome verified
+the public Verity branding, all lifecycle panels, the installed Shield chooser,
+program readiness, and retained QA market/assertion reads. All eight mapping
+reads succeeded; the market remained open with its existing collateral and
+token supplies. Shield was locked, so no new wallet transaction was tested.
+The audit download was invoked but could not be retrieved by browser tooling;
+the exact public console evidence is preserved in LOG.md.
+
 Mainnet remains intentionally locked behind both an explicit command argument
 and a public confirmation value.

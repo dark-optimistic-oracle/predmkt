@@ -519,3 +519,104 @@ existing export unit test was updated accordingly.
 After the final patches, pnpm check again passed lint, 36/36 unit tests,
 static security checks, TypeScript, and the production build. Full pnpm audit
 reported no known vulnerabilities. No Testnet transaction was submitted.
+
+### Baseline console evidence (export retrieval unavailable)
+
+These are the second baseline tab's normalized console entries, in their
+original event order. Three requests ran concurrently, so response order
+differs from request order. Each response completed successfully with HTTP 200.
+No wallet request or transaction ID applies to a public read.
+
+```json
+{"schema":"aleo-browser-audit/v1","sequence":1,"timestamp":"2026-10-03T02:58:52.806Z","callId":"aleo-call-1","phase":"request","kind":"read","network":"testnet","description":"Read the latest Aleo Testnet block height","function":"get_latest_block_height","parameters":{"httpMethod":"GET","url":"https://api.provable.com/v2/testnet/block/height/latest"}}
+{"schema":"aleo-browser-audit/v1","sequence":2,"timestamp":"2026-10-03T02:58:52.807Z","callId":"aleo-call-2","phase":"request","kind":"read","network":"testnet","description":"Read deployed program dark_optimistic_oracle.aleo","program":"dark_optimistic_oracle.aleo","function":"get_program","parameters":{"programId":"dark_optimistic_oracle.aleo","httpMethod":"GET","url":"https://api.provable.com/v2/testnet/program/dark_optimistic_oracle.aleo"}}
+{"schema":"aleo-browser-audit/v1","sequence":3,"timestamp":"2026-10-03T02:58:52.807Z","callId":"aleo-call-3","phase":"request","kind":"read","network":"testnet","description":"Read deployed program doo_prediction_market.aleo","program":"doo_prediction_market.aleo","function":"get_program","parameters":{"programId":"doo_prediction_market.aleo","httpMethod":"GET","url":"https://api.provable.com/v2/testnet/program/doo_prediction_market.aleo"}}
+{"schema":"aleo-browser-audit/v1","sequence":4,"timestamp":"2026-10-03T02:58:52.902Z","callId":"aleo-call-2","phase":"response","kind":"read","network":"testnet","description":"Read deployed program dark_optimistic_oracle.aleo","program":"dark_optimistic_oracle.aleo","function":"get_program","parameters":{"programId":"dark_optimistic_oracle.aleo","httpMethod":"GET","url":"https://api.provable.com/v2/testnet/program/dark_optimistic_oracle.aleo"},"result":{"httpStatus":200,"ok":true}}
+{"schema":"aleo-browser-audit/v1","sequence":5,"timestamp":"2026-10-03T02:58:52.905Z","callId":"aleo-call-3","phase":"response","kind":"read","network":"testnet","description":"Read deployed program doo_prediction_market.aleo","program":"doo_prediction_market.aleo","function":"get_program","parameters":{"programId":"doo_prediction_market.aleo","httpMethod":"GET","url":"https://api.provable.com/v2/testnet/program/doo_prediction_market.aleo"},"result":{"httpStatus":200,"ok":true}}
+{"schema":"aleo-browser-audit/v1","sequence":6,"timestamp":"2026-10-03T02:58:52.990Z","callId":"aleo-call-1","phase":"response","kind":"read","network":"testnet","description":"Read the latest Aleo Testnet block height","function":"get_latest_block_height","parameters":{"httpMethod":"GET","url":"https://api.provable.com/v2/testnet/block/height/latest"},"result":{"httpStatus":200,"ok":true}}
+```
+
+The first tab showed both programs Ready and height 20133178. Its later console
+retrieval was unavailable after the browser reset, so no missing event order or
+timestamp is reconstructed for that tab.
+
+### 2026-10-02 23:08 EDT — Published Verity browser verification
+
+GitHub Actions run 37092030322 deployed commit 9b87f98 successfully. Every gate
+passed: frontend unit tests, dependency audit, static security checks, Leo
+contract tests, Devnet/Testnet/Mainnet deployment-source dry runs, production
+build, and Pages publication. The public URL is
+https://dark-optimistic-oracle.github.io/predmkt/.
+
+Chrome then reloaded that URL. Its title, header, footer, explanatory copy,
+and console all used Verity. Both programs were Ready at height 20133386.
+The tester entered market ID 187031921 and assertion ID 187031922 and selected
+Load on-chain state. All eight requested mappings returned HTTP 200. The
+interface showed collateral 300000u128, YES supply 200000u128, NO supply
+100000u128, oracle status Reported, and market resolution Open. Betting,
+dispute, and voting deadlines remained 18703305, 18703670, and 18703770.
+The assertion reported YES. No settlement or redemption was requested.
+
+The Trade, Report, Review, and Settle panels rendered; the Shield wallet chooser
+showed Shield installed and was closed without connecting. Signed-action
+controls were disabled while disconnected. Download audit LOG.md was clicked,
+but the exported file remained unavailable to the test tooling as explained
+above. The original public console entries were used for the evidence below.
+Shield's automatic connection attempt reported a locked wallet. Other baseline
+console messages came from installed browser extensions; no new application
+read failure occurred. This check covers public reads and interface behavior,
+not a new connected-wallet transaction lifecycle. No proof, signature, wallet
+request ID, transaction ID, fee, or on-chain state change occurred.
+
+The following normalized evidence groups shared call fields once, while keeping
+every request and response in the exact observed order. All calls are GET reads
+on Testnet at https://api.provable.com/v2/testnet. Timestamp strings are UTC;
+03:08 UTC on October 3 is 23:08 EDT on October 2. Response status is HTTP 200
+with ok=true. Each mapping key and full endpoint is retained below.
+
+```json
+{
+  "network": "testnet",
+  "httpMethod": "GET",
+  "calls": {
+    "1": {"function":"get_latest_block_height","url":"https://api.provable.com/v2/testnet/block/height/latest"},
+    "2": {"program":"dark_optimistic_oracle.aleo","function":"get_program","programId":"dark_optimistic_oracle.aleo","url":"https://api.provable.com/v2/testnet/program/dark_optimistic_oracle.aleo"},
+    "3": {"program":"doo_prediction_market.aleo","function":"get_program","programId":"doo_prediction_market.aleo","url":"https://api.provable.com/v2/testnet/program/doo_prediction_market.aleo"},
+    "4": {"program":"doo_prediction_market.aleo","function":"get_mapping_value","mapping":"markets","key":"187031921field","url":"https://api.provable.com/v2/testnet/program/doo_prediction_market.aleo/mapping/markets/187031921field"},
+    "5": {"program":"doo_prediction_market.aleo","function":"get_mapping_value","mapping":"collateral_pool","key":"187031921field","url":"https://api.provable.com/v2/testnet/program/doo_prediction_market.aleo/mapping/collateral_pool/187031921field"},
+    "6": {"program":"doo_prediction_market.aleo","function":"get_mapping_value","mapping":"yes_supply","key":"187031921field","url":"https://api.provable.com/v2/testnet/program/doo_prediction_market.aleo/mapping/yes_supply/187031921field"},
+    "7": {"program":"doo_prediction_market.aleo","function":"get_mapping_value","mapping":"no_supply","key":"187031921field","url":"https://api.provable.com/v2/testnet/program/doo_prediction_market.aleo/mapping/no_supply/187031921field"},
+    "8": {"program":"doo_prediction_market.aleo","function":"get_mapping_value","mapping":"resolved","key":"187031921field","url":"https://api.provable.com/v2/testnet/program/doo_prediction_market.aleo/mapping/resolved/187031921field"},
+    "9": {"program":"doo_prediction_market.aleo","function":"get_mapping_value","mapping":"resolutions","key":"187031921field","url":"https://api.provable.com/v2/testnet/program/doo_prediction_market.aleo/mapping/resolutions/187031921field"},
+    "10": {"program":"dark_optimistic_oracle.aleo","function":"get_mapping_value","mapping":"assertions","key":"187031922field","url":"https://api.provable.com/v2/testnet/program/dark_optimistic_oracle.aleo/mapping/assertions/187031922field"},
+    "11": {"program":"dark_optimistic_oracle.aleo","function":"get_mapping_value","mapping":"disputers","key":"187031922field","url":"https://api.provable.com/v2/testnet/program/dark_optimistic_oracle.aleo/mapping/disputers/187031922field"}
+  },
+  "eventColumns": ["sequence","callNumber","phase","timestamp"],
+  "events": [
+    [1,1,"request","2026-10-03T03:08:39.311Z"],
+    [2,2,"request","2026-10-03T03:08:39.312Z"],
+    [3,3,"request","2026-10-03T03:08:39.312Z"],
+    [4,3,"response","2026-10-03T03:08:39.451Z"],
+    [5,2,"response","2026-10-03T03:08:39.466Z"],
+    [6,1,"response","2026-10-03T03:08:39.490Z"],
+    [7,4,"request","2026-10-03T03:08:45.369Z"],
+    [8,5,"request","2026-10-03T03:08:45.370Z"],
+    [9,6,"request","2026-10-03T03:08:45.371Z"],
+    [10,7,"request","2026-10-03T03:08:45.371Z"],
+    [11,8,"request","2026-10-03T03:08:45.371Z"],
+    [12,9,"request","2026-10-03T03:08:45.371Z"],
+    [13,10,"request","2026-10-03T03:08:45.371Z"],
+    [14,11,"request","2026-10-03T03:08:45.372Z"],
+    [15,6,"response","2026-10-03T03:08:45.474Z"],
+    [16,4,"response","2026-10-03T03:08:45.485Z"],
+    [17,10,"response","2026-10-03T03:08:45.486Z"],
+    [18,5,"response","2026-10-03T03:08:45.489Z"],
+    [19,9,"response","2026-10-03T03:08:45.489Z"],
+    [20,7,"response","2026-10-03T03:08:45.494Z"],
+    [21,11,"response","2026-10-03T03:08:45.506Z"],
+    [22,8,"response","2026-10-03T03:08:45.521Z"]
+  ],
+  "responseResult": {"httpStatus":200,"ok":true},
+  "callIdPrefix": "aleo-call-"
+}
+```
