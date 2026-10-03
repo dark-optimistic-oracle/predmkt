@@ -39,7 +39,7 @@ describe('persistent Aleo audit journal', () => {
     });
 
     const markdown = buildAleoAuditMarkdown();
-    expect(markdown).toContain('# Prediction market Aleo call log');
+    expect(markdown).toContain('# Verity Prediction Market Aleo call log');
     expect(markdown).toContain('**What happened:** The frontend prepared');
     expect(markdown).toContain('temporary and does not prove');
     expect(markdown).toContain('The accepted on-chain transaction ID is at1example.');

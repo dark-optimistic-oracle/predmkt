@@ -503,3 +503,19 @@ timed out and macOS denied access to Downloads even with shell approval.
 Consequently the exported file could not be merged at this stage. Public
 console evidence and visible outcomes were retained instead; no exported
 file or successful download is claimed.
+
+### Publication gate and minimal security patches
+
+GitHub Actions run 37091815846 passed lint and unit tests but failed the
+dependency-audit gate, so it did not deploy. Local pnpm audit reproduced five
+high advisories in Undici and brace-expansion. Initial patches removed the
+high advisories; the follow-up report exposed three remaining moderate
+advisories in Vitest/mocker and brace-expansion. The final selected patches are
+Undici 8.10.2, brace-expansion 5.0.12, and Vitest 4.1.11. These affect frontend
+development dependencies only. Contract, wallet, React, and Aleo tool versions
+were not changed. The audit export heading also now identifies Verity; its
+existing export unit test was updated accordingly.
+
+After the final patches, pnpm check again passed lint, 36/36 unit tests,
+static security checks, TypeScript, and the production build. Full pnpm audit
+reported no known vulnerabilities. No Testnet transaction was submitted.

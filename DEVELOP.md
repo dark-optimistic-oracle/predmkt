@@ -222,5 +222,12 @@ program IDs, state, URLs, wallet integration, and pinned tool versions remain
 compatible. Publishing uses the existing main-branch GitHub Pages workflow.
 Verification and live browser evidence are recorded in LOG.md.
 
+The Pages run exposed new high-severity advisories in development dependencies.
+Pinned brace-expansion to 5.0.12, Vitest to 4.1.11, and overrode vulnerable
+Undici 8.x to 8.10.2 to address the high and moderate development advisories.
+These patches unblock the existing audit gate without changing the Aleo tools
+or wallet package versions. The social preview is public/og-verity.png; its
+heading and subtitle were edited using the built-in image generation tool.
+
 Mainnet remains intentionally locked behind both an explicit command argument
 and a public confirmation value.

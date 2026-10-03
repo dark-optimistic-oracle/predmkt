@@ -92,7 +92,7 @@ function humanExplanation(entry: AleoAuditEntry) {
 export function buildAleoAuditMarkdown() {
   const entries = readAuditJournal();
   const lines = [
-    '# Prediction market Aleo call log',
+    '# Verity Prediction Market Aleo call log',
     '',
     `Generated: ${new Date().toISOString()}.`,
     '',

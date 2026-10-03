@@ -188,3 +188,18 @@ Vitest tests, TypeScript, and the production build after activation. The oracle
 suite passed 10/10 Leo tests before submission. Previously accepted residual
 privacy, economic, administration, and client-log risks remain unchanged, and
 Mainnet remains locked.
+
+## 2026-10-02 — Dependency gate during Verity publication
+
+Pages run 37091815846 stopped at the dependency audit: three high-severity
+Undici advisories (WebSocket denial of service, BalancedPool TLS options,
+and cross-origin cache isolation) and two high-severity brace-expansion
+recursion advisories affected development dependencies. The deployed browser
+bundle does not include these test/lint dependencies. The existing security
+gate correctly prevented publication.
+
+Fix: override Undici 8.x to 8.10.2, brace-expansion to 5.0.12, and pin Vitest
+4.1.11. The latter two patches also cover the moderate brace-expansion CPU
+denial of service and Vitest mocker path traversal advisories discovered on
+recheck. Aleo and wallet versions stay pinned. Verification results and the
+subsequent Pages run are recorded in LOG.md. No contract logic changed.
