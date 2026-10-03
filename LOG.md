@@ -1,5 +1,13 @@
 # Prediction market Aleo call log
 
+## 2026-10-03 — Private preparation implementation checkpoint
+
+The user authorized private record preparation and continued testing within an
+additional 10-Testnet-ALEO budget. Added separately opt-in self-funding and
+wallet record selection, with private data retained in memory/form inputs only.
+Only public transfer parameters and record counts enter the journal. No actual
+preparation or private vote has happened at this implementation checkpoint.
+
 ## 2026-10-03 — Actual public-path screenshot checkpoint
 
 Created fresh market 202610031; minted YES and NO positions; reported canonical

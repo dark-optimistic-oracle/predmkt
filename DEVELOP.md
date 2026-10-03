@@ -1,5 +1,14 @@
 # Development Notes
 
+## 2026-10-03 — Authorized private record preparation
+
+Added separately opt-in demoTools=1 self-funding and Shield record selection,
+limited to payment/right destinations in this app. Plaintext is not logged or
+persisted by the helper. It shares the main pending-request lock. QA-tools mode
+uses 10000-microcredit optional priority fees to honor the authorized additional
+10-Testnet-ALEO budget; ordinary fees unchanged. No preparation call is claimed
+at the implementation checkpoint. Added gating/plaintext-shape/label tests.
+
 ## 2026-10-03 — Step-tagged screenshot demonstrations
 
 Public checkpoint: six actual accepted executions cover market creation, both

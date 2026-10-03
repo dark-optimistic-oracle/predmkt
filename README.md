@@ -12,6 +12,14 @@ execution evidence and remaining steps are distinguished in CALLING_SEQUENCE.md.
 Import a reviewed journal with `node demo-slideshow/import_audit_log.mjs EXPORT.md LOG.md`,
 then review, commit and push LOG.md. The importer detects identical exports.
 
+Adding `&demoTools=1` explicitly enables private QA preparation: self-transfer
+1000 DOOR units and 3 Testnet ALEO into private records, or load unspent Shield
+records directly into the voting form. Wallet approval is required; plaintext
+is in memory/form inputs only and must be cleared before screenshots. This mode
+requests a 10000-microcredit optional priority fee; normal mode remains 1000000.
+Inspect the full fee in Shield before approving. Oracle award/refund tools are
+in the Oracle app, not invented as market features.
+
 **Verity** is the short name. Predict freely. Challenge outcomes. Settle fairly.
 
 A self-contained prediction-market demonstration resolved by the Dark Optimistic Oracle on Aleo. This repository keeps the React frontend, user documentation, oracle source, market source, and local-devnet registry workaround together.

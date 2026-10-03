@@ -48,6 +48,8 @@ import {
 } from './lib/aleoAudit';
 import { waitForWalletTransaction } from './lib/aleoTransactionStatus';
 import DemoAuditControl from './DemoAuditControl';
+import DemoWalletTools from './DemoWalletTools';
+import { demoQaFee } from './demoQa';
 
 type Stage = 'trade' | 'report' | 'challenge' | 'settle';
 type Notice = { type: 'success' | 'error'; message: string };
@@ -250,7 +252,7 @@ export default function PredictionMarket() {
       program,
       function: functionName,
       inputs,
-      fee: TRANSACTION_FEE,
+      fee: demoQaFee(TRANSACTION_FEE),
       privateFee: PRIVATE_FEE_FUNCTIONS.has(functionName),
     };
     let audit: ReturnType<typeof beginAleoCall> | null = null;
@@ -516,6 +518,13 @@ export default function PredictionMarket() {
   return (
     <main id="top">
       <DemoAuditControl />
+      <DemoWalletTools includeAwards={false} disabled={transactionPending} onBusyChange={busy => {
+        transactionPendingRef.current = busy;
+        setTransactionPending(busy);
+      }} onRecord={(target, record) => {
+        if (target === 'payment') setPrivatePayment(record);
+        else if (target === 'right') setVotingRight(record);
+      }} />
       <section className="hero">
         <div className="hero-copy">
           <span className="eyebrow"><Sparkles aria-hidden="true" size={14} /> Live protocol demonstration</span>
