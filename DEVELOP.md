@@ -265,3 +265,11 @@ the exact public console evidence is preserved in LOG.md.
 
 Mainnet remains intentionally locked behind both an explicit command argument
 and a public confirmation value.
+# 2026-10-03 - Private disputed demo completion
+
+Recorded actual private right, deny and confirm requests, a cross-app additional
+deny, accepted settlement and redemption. Imported the complete browser export.
+Extended PDF/HTML to 20 slides. Verified final pool 0 and YES resolution.
+Documented manual payout entry and lack of a losing-side UI preflight guard;
+no losing redemption was sent merely to spend fees. Contract enforcement was
+not replaced by frontend outcome selection.

@@ -18,5 +18,9 @@
     {"file":"slide14.jpg","step":"VER-11","caption":"Final refreshed market state after redemption: resolved YES and zero collateral remaining. Supply mappings retain the settlement denominator; registry burning occurs in the redemption transaction."},
     {"file":"slide15.jpg","step":"VER-12","caption":"Explorer proves accepted winning-token redemption, including nested registry burn and credits payment. Accepted transaction IDs and wallet request IDs are preserved in the call sequence and LOG.md."},
     {"file":"slide16.jpg","step":"VER-13","caption":"The exported audit journal marks calls with screenplay steps, ordered operation explanations and normalized JSON. The journal is retained in repository LOG.md; private branches remain pending preparation."}
+    ,{"file":"slide17.png","step":"VER-DISPUTED-06","caption":"Shield reviewed a private Oracle voting-right purchase for assertion 2026100305. Its 100-unit DOOR stake is separate from the prediction market YES/NO assets and ALEO collateral."}
+    ,{"file":"slide18.png","step":"VER-DISPUTED-07","caption":"Actual Shield approval for deny using a private voting right. Private form plaintext was cleared before capture. A confirm and second deny followed, yielding confirm=1 and deny=2."}
+    ,{"file":"slide19.png","step":"VER-DISPUTED-09","caption":"Exact public settlement inputs: market 202610032, assertion 2026100305, reported NO=false and assertion_valid=false. The contract derives YES; no direct requested-YES parameter bypasses Oracle verification."}
+    ,{"file":"slide20.jpg","step":"VER-DISPUTED-10 / VER-DISPUTED-11","caption":"Accepted winning-token redemption and refreshed state: resolved YES, collateral pool 0. All 30000 winning YES tokens redeemed for 50000 microcredits. Historical supply mappings retain settlement denominators; losing NO tokens have no payout."}
   ]
 }

@@ -291,3 +291,12 @@ disabled.
 This software is a Testnet demonstration. Dated engineering findings, fixes,
 verification, and residual risks are documented in [AUDIT.md](AUDIT.md) and
 [SECURITY.md](SECURITY.md); neither is an independent audit or formal verification.
+# Actual Testnet demo capture
+
+The 20-slide `demo-slideshow/index.html` and PDF demonstrate both undisputed
+and disputed Oracle-gated resolution and winning-token redemption. The disputed
+NO report lost 2-to-1, yielding YES and redemption of the full collateral pool.
+Screenplay, calling sequence and LOG.md preserve exact evidence and caveats.
+Payouts are manually entered; losing-side rejection remains contract-enforced.
+All roles use one QA wallet, not independent voters. No private plaintext is
+included in the published screenshots or logs.

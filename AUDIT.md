@@ -203,3 +203,12 @@ Fix: override Undici 8.x to 8.10.2, brace-expansion to 5.0.12, and pin Vitest
 denial of service and Vitest mocker path traversal advisories discovered on
 recheck. Aleo and wallet versions stay pinned. Verification results and the
 subsequent Pages run are recorded in LOG.md. No contract logic changed.
+# QA follow-up - 2026-10-03
+
+Live disputed settlement verified NO rejection derives YES, then winning
+redemption drains the correct 50000-microcredit pool. Private voter DOOR and
+market outcomes remain separate. This one-wallet test does not prove independent
+consensus. Improvement: prevent losing-side requests client-side after a fresh
+matching-market resolution read, and calculate the payout automatically. The
+contract remains the authority; no losing request was submitted in this run.
+Private records were cleared before capture and redacted from audit exports.

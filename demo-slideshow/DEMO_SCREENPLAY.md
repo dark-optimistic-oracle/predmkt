@@ -45,3 +45,33 @@ Oracle incentive collection and unused voting-right refunds have no buttons in
 this app: demonstrate them through the Oracle frontend, not invented market UI.
 Admin initialization/deployment are not participant features. Report any wallet,
 proof, fee, timing or record-access blocker explicitly in the captured sequence.
+# Captured private extension
+
+For the resumed recording, open the same Pages site with
+`?demo=demo-20261003&demoTools=1`. Its optional QA preparation panel retrieves
+unspent Shield records and places the selected one in the current form. Use
+records off-camera and clear the textarea immediately after requesting the
+wallet execution. Never include plaintext in screenshots or LOG.md.
+
+The captured extension uses market 202610032 and assertion 2026100305. Its
+markers VER-DISPUTED-01 through 08 correspond to create, YES mint, NO mint,
+post-close NO report, dispute, voting-right purchase, Deny, and an additional
+right/Confirm. They extend steps VER-13 through VER-16 below. One additional
+Deny was cast through the Oracle frontend (DOO-16), demonstrating shared
+on-chain state. All roles use the same controlled QA account. The observed
+tally is 1 confirm and 2 deny; do not describe these as independent voters.
+
+VER-DISPUTED-09 means wait/read height, select YES under Settle, verify the
+report still says NO, and click Settle from oracle only after block 20145800.
+VER-DISPUTED-10 means burn all 30000 winning YES tokens for the exact combined
+50000-microcredit collateral payout. Actual final acceptance is recorded in
+CALLING_SEQUENCE.md and LOG.md, not inferred from these instructions.
+# Recorded completion of the private extension
+
+Slides 17-20 correspond to VER-DISPUTED-06, 07, 09 and 10/11.
+In Settle choose YES because the reported NO assertion lost, then click
+Settle from oracle after voting closes. Select YES202610032, enter 30000
+tokens and exact payout 50000 microcredits, click Burn winner and redeem,
+approve Shield, wait for acceptance, then click Load on-chain state.
+The captured result is YES with zero collateral. Never film private record
+inputs; clear them immediately after their wallet request.
