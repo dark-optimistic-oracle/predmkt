@@ -2,6 +2,14 @@
 
 ## 2026-10-03 — Step-tagged screenshot demonstrations
 
+Public checkpoint: six actual accepted executions cover market creation, both
+outcome purchases, canonical reporting, oracle settlement and full redemption.
+Sixteen screenshot slides assembled as PDF and HTML. Added an idempotent audit
+journal importer; LOG.md preserves the exact export and provider indexing lag.
+Fixed stale block-height display during market lookup without resetting entered
+deadlines; reran all 37 tests, lint, security checks and build successfully.
+Private branches are pending the user's authorized preparation work.
+
 Added opt-in demo run/step controls and exact initiating-step snapshots to audit
 entries and Markdown exports. Added a regression test that changes the current
 step before a pending request completes. `pnpm check` passed: 37 unit tests,

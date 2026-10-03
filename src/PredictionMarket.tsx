@@ -455,6 +455,17 @@ export default function PredictionMarket() {
     setLookupState({ status: 'loading' });
     const key = toField(marketId);
     try {
+      // A state lookup must not leave the deadline display at the startup height.
+      // Keep entered deadlines intact while refreshing the actual chain height.
+      const heightResponse = await fetchTestnet('/testnet/block/height/latest', {
+        description: 'Refresh the latest Aleo Testnet block height for market state',
+        function: 'get_latest_block_height',
+        parameters: {},
+      });
+      if (!heightResponse.ok) throw new Error('Unable to refresh Aleo Testnet height.');
+      const latestHeight = Number(await heightResponse.json());
+      if (!Number.isSafeInteger(latestHeight)) throw new Error('Aleo returned an invalid block height.');
+      setHeight(latestHeight);
       const [market, collateral, yesSupply, noSupply, resolved, resolution, assertion, disputer] =
         await Promise.all([
           readMapping(MARKET_PROGRAM_ID, 'markets', key),

@@ -6,6 +6,12 @@ step. **Download audit LOG.md** exports the journal; **View demo audit log**
 shows the same Markdown. Never capture private record plaintext in slides.
 See [the screenplay](demo-slideshow/DEMO_SCREENPLAY.md).
 
+`demo-slideshow` also contains numbered public screenshots, their `slides.json`
+step manifest, `DEMO_SLIDESHOW.pdf` and an HTML `index.html` slideshow. Actual
+execution evidence and remaining steps are distinguished in CALLING_SEQUENCE.md.
+Import a reviewed journal with `node demo-slideshow/import_audit_log.mjs EXPORT.md LOG.md`,
+then review, commit and push LOG.md. The importer detects identical exports.
+
 **Verity** is the short name. Predict freely. Challenge outcomes. Settle fairly.
 
 A self-contained prediction-market demonstration resolved by the Dark Optimistic Oracle on Aleo. This repository keeps the React frontend, user documentation, oracle source, market source, and local-devnet registry workaround together.

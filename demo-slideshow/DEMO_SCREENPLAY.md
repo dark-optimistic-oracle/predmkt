@@ -21,7 +21,7 @@ wall-clock estimates as evidence that an on-chain deadline has passed.
 | VER-06 | Trade: collateral 10000; click Mint NO. Approve, then Load on-chain state. | Market `buy_outcome`, NO token mint; mapping reads. Expected pool 50000, YES supply 30000, NO supply 20000. |
 | VER-07 | Wait until chain height is strictly past betting close. Report: select Report YES, bond 1000 DOOR units, voter stake 100; choose fresh dispute and vote deadlines (at least 10 blocks apart). Click Report YES outcome; approve. | Oracle `create_assertion`; bonded DOOR burn. |
 | VER-08 | Review: explain dispute and private voting. For the undisputed branch, do not click Dispute. Wait until grace deadline is past and refresh chain evidence. | Reads only. No vote or dispute is falsely claimed. |
-| VER-09 | Settle: select YES; click Settle from oracle and approve. Show accepted transaction. | Market `settle_market` calls oracle `verify_assertion`; registry winning/losing assets remain distinct from DOOR. |
+| VER-09 | Settle: select YES; click Settle from oracle and approve. Show accepted transaction. | Market `settle_market` calls oracle `verify_assertion_outcome`; registry winning/losing assets remain distinct from DOOR. |
 | VER-10 | Settle: choose YES token, burn 30000, exact payout 50000 microcredits. Click Burn winner and redeem; approve. | Market `redeem_winning_tokens`, winning-token burn and credits payment. |
 | VER-11 | Click Load on-chain state; show resolved YES, zero remaining collateral, and the NO asset with no redeemable value. | Mapping reads. Losing tokens do not gain a claim on DOOR. |
 | VER-12 | Open accepted transaction IDs in the blockchain explorer. Show program, nested transitions and public parameters. | Explorer reads only. |
