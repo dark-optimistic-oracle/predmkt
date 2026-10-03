@@ -14026,3 +14026,28 @@ all 20 manifest screenshots, HTML image paths and root/demo README relative
 links exist. Lint, 39 tests and production build passed. Media was moved without
 regeneration; historical exports were not rewritten. No Aleo calls or wallet
 requests were made during this local verification.
+## Testnet deployment sanity check — 2026-10-03
+
+Read-only terminal API check; no transaction, wallet request, fee or private input.
+Endpoint: https://api.provable.com/v2; network: testnet.
+Exact request order (all HTTP 200):
+
+1. GET /testnet/program/dark_optimistic_oracle.aleo — source retrieved.
+2. GET /testnet/program/dark_optimistic_oracle.aleo/latest_edition — 1.
+3. GET /testnet/program/doo_prediction_market.aleo — source retrieved.
+4. GET /testnet/program/doo_prediction_market.aleo/latest_edition — 1.
+5. GET /testnet/block/height/latest — 20147479.
+6. GET /testnet/program/dark_optimistic_oracle.aleo — normalized comparison.
+7. GET /testnet/program/doo_prediction_market.aleo — normalized comparison.
+8. GET /testnet/program/dark_optimistic_oracle.aleo — deployment-address comparison.
+9. GET /testnet/program/doo_prediction_market.aleo — deployment-address comparison.
+
+Initial byte/whitespace-only comparisons differed because local builds retain
+public devnet administrator aleo1rhgdu77hgyqd3xjj8ucu3jj9r2krwz6mnzyd80gncr5fxcwlh5rsvzp9px.
+Deployment scripts substitute the documented dedicated Testnet administrator
+aleo1a2k4a9phy4kklx2ad0aed0lgvyzaegf0gfp85uldzhjzn8tt05zsjmfjnf.
+After that exact substitution and comment/whitespace normalization, BOTH program
+sources match completely. Frontend configured IDs are these same programs.
+This verifies published code against existing local compiled artifacts, not a
+fresh compilation of Leo sources or a new live transaction. Prior actual demo
+executions remain the execution evidence. v.0.1.1 tags were not moved.
