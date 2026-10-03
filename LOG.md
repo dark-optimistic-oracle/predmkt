@@ -14018,3 +14018,11 @@ No losing redemption was submitted. The current UI permits selecting a losing
 asset; the contract enforces rejection. Wallet submission endpoint is not
 exposed; primary public reads use https://api.provable.com/v2.
 Local unit/build tests and slideshow rendering are not Aleo transactions.
+# Demo directory rename QA - 2026-10-03
+
+Renamed demo-slideshow to demo with screenshots, PDF, HTML and logs intact.
+Updated root deployed-app/reviewer links and cross-repo guide links. Verified
+all 20 manifest screenshots, HTML image paths and root/demo README relative
+links exist. Lint, 39 tests and production build passed. Media was moved without
+regeneration; historical exports were not rewritten. No Aleo calls or wallet
+requests were made during this local verification.

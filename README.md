@@ -1,15 +1,18 @@
 # Verity Prediction Market
 
+- App: [deployed Verity frontend](https://dark-optimistic-oracle.github.io/predmkt/)
+- Demo: [viewing instructions and blockchain evidence](demo/README.md)
+
 For screenshot demonstrations, add `?demo=demo-20261003` to the site URL and set
 **Demo step** before each action. Requests and results retain their initiating
 step. **Download audit LOG.md** exports the journal; **View demo audit log**
 shows the same Markdown. Never capture private record plaintext in slides.
-See [the screenplay](demo-slideshow/DEMO_SCREENPLAY.md).
+See [the screenplay](demo/DEMO_SCREENPLAY.md).
 
-`demo-slideshow` also contains numbered public screenshots, their `slides.json`
+`demo` also contains numbered public screenshots, their `slides.json`
 step manifest, `DEMO_SLIDESHOW.pdf` and an HTML `index.html` slideshow. Actual
 execution evidence and remaining steps are distinguished in CALLING_SEQUENCE.md.
-Import a reviewed journal with `node demo-slideshow/import_audit_log.mjs EXPORT.md LOG.md`,
+Import a reviewed journal with `node demo/import_audit_log.mjs EXPORT.md LOG.md`,
 then review, commit and push LOG.md. The importer detects identical exports.
 
 Adding `&demoTools=1` explicitly enables private QA preparation: self-transfer
@@ -293,7 +296,7 @@ verification, and residual risks are documented in [AUDIT.md](AUDIT.md) and
 [SECURITY.md](SECURITY.md); neither is an independent audit or formal verification.
 # Actual Testnet demo capture
 
-The 20-slide `demo-slideshow/index.html` and PDF demonstrate both undisputed
+The 20-slide `demo/index.html` and PDF demonstrate both undisputed
 and disputed Oracle-gated resolution and winning-token redemption. The disputed
 NO report lost 2-to-1, yielding YES and redemption of the full collateral pool.
 Screenplay, calling sequence and LOG.md preserve exact evidence and caveats.

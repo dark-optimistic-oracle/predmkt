@@ -273,3 +273,8 @@ Extended PDF/HTML to 20 slides. Verified final pool 0 and YES resolution.
 Documented manual payout entry and lack of a losing-side UI preflight guard;
 no losing redemption was sent merely to spend fees. Contract enforcement was
 not replaced by frontend outcome selection.
+# 2026-10-03 - Demo folder naming
+
+Renamed demo-slideshow to demo with all evidence intact. Updated root README
+links to deployed Verity and demo/README.md, cross-repository guide links and
+audit importer instructions. Historical entries retain original path names.

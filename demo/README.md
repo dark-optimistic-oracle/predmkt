@@ -63,7 +63,7 @@ For the second market, all 30000 winning YES units redeemed for the entire
 mappings retain historical settlement denominators. Losing NO units have no
 payout entitlement. DOOR voter stakes are independent of both outcome tokens
 and ALEO collateral. Cross-app additional voting and Oracle rewards are recorded
-in [the webapp repository](https://github.com/dark-optimistic-oracle/webapp/tree/main/demo-slideshow)
+in [the webapp repository](https://github.com/dark-optimistic-oracle/webapp/tree/main/demo)
 and its root LOG.md; they are not falsely attributed to this frontend's journal.
 
 ## Review limits and completeness
