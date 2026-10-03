@@ -25,9 +25,9 @@ export default function App() {
       <WalletModalProvider>
         <div className="site-shell">
           <header className="site-header">
-            <a className="brand" href="#top" aria-label="Dark Prediction Market home">
+            <a className="brand" href="#top" aria-label="Verity Prediction Market home">
               <span className="brand-icon"><ShieldCheck aria-hidden="true" size={18} /></span>
-              <span>Dark <b>Prediction Market</b></span>
+              <span>Verity <b>Prediction Market</b></span>
             </a>
             <div className="header-actions">
               <nav aria-label="Primary navigation">
@@ -51,7 +51,7 @@ export default function App() {
           <footer>
             <a className="brand footer-brand" href="#top">
               <span className="brand-icon"><ShieldCheck aria-hidden="true" size={16} /></span>
-              Dark Prediction Market
+              Verity Prediction Market
             </a>
             <p>Open-source demonstration on Aleo Testnet. Not financial advice.</p>
             <div>

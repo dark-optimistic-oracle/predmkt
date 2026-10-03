@@ -212,5 +212,15 @@ on-chain transaction ID. The retained settlement request never received wallet
 approval and is documented in [LOG.md](LOG.md) as incomplete; the on-chain
 market therefore remains unresolved and redemption has not occurred.
 
+## 2026-10-02 — Verity branding
+
+The public product is now **Verity Prediction Market**, shortened to **Verity**
+in explanatory copy and the market console. Updated the header, footer, page
+title, social metadata, README, hero copy, and the console unit-test expectation.
+The tagline is “Predict freely. Challenge outcomes. Settle fairly.” Existing
+program IDs, state, URLs, wallet integration, and pinned tool versions remain
+compatible. Publishing uses the existing main-branch GitHub Pages workflow.
+Verification and live browser evidence are recorded in LOG.md.
+
 Mainnet remains intentionally locked behind both an explicit command argument
 and a public confirmation value.

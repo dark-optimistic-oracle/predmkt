@@ -471,3 +471,35 @@ DOOR registration, initial mint, and mappings were not repeated. Final
 prediction-market verification passed lint, static security checks, 36/36
 Vitest tests, TypeScript, and the production Vite build. No wallet transaction
 was needed for those frontend checks.
+
+## 2026-10-02 — Verity rebrand, unit tests, and Pages publication
+
+The prediction-market product is now Verity Prediction Market (short name:
+Verity). Updated the header, footer, console, hero, README, page title, social
+metadata, and social illustration. The image-generation skill replaced only
+the illustration's heading and subtitle with the agreed name and tagline;
+the reviewed image is saved as public/og-verity.png. Existing contract IDs and
+tool versions are retained.
+
+Local verification: the first unit run passed 35/36 tests and identified an
+expectation for the old console heading. After updating that expectation,
+pnpm check passed lint, all 36 unit tests, static security checks, TypeScript,
+and the production build. No real wallet execution occurs in these mocked
+unit tests. Publishing is initiated by pushing this commit to main; live
+deployment and browser results will be recorded in a follow-up entry.
+
+Before publication, Chrome loaded the existing public site twice. Its automatic
+Testnet reads requested the latest block height and the deployed programs
+dark_optimistic_oracle.aleo and doo_prediction_market.aleo from
+https://api.provable.com/v2/testnet. Both programs showed Ready; observed
+heights were 20133178 and 20133204. The second tab's exact event order was:
+height request, oracle request, market request, oracle HTTP 200 response,
+market HTTP 200 response, height HTTP 200 response. These reads used no wallet
+request or transaction ID and changed no on-chain state. Shield remained
+disconnected and its auto-connect attempt reported that it was locked.
+
+The Download audit LOG.md control was invoked, but the browser download API
+timed out and macOS denied access to Downloads even with shell approval.
+Consequently the exported file could not be merged at this stage. Public
+console evidence and visible outcomes were retained instead; no exported
+file or successful download is claimed.

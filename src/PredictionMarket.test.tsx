@@ -35,7 +35,7 @@ describe('PredictionMarket', () => {
   it('explains that outcome assets and DOOR have separate roles', async () => {
     render(<PredictionMarket />);
 
-    expect(screen.getByRole('heading', { name: /prediction market console/i })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /verity market console/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /download audit log\.md/i })).toBeEnabled();
     expect(screen.getByText(/DOOR is not used here/i)).toBeInTheDocument();
     expect(screen.getByText(/losing asset redeems for zero/i)).toBeInTheDocument();

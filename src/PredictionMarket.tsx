@@ -506,9 +506,9 @@ export default function PredictionMarket() {
       <section className="hero">
         <div className="hero-copy">
           <span className="eyebrow"><Sparkles aria-hidden="true" size={14} /> Live protocol demonstration</span>
-          <h1>Trade the outcome.<br /><em>Verify the truth.</em></h1>
+          <h1>Predict freely.<br /><em>Settle fairly.</em></h1>
           <p>
-            A simple prediction market resolved by the Dark Optimistic Oracle.
+            Verity is a prediction market resolved by the Dark Optimistic Oracle.
             Reports pass after a challenge window—or move to private Aleo voting when disputed.
           </p>
           <div className="hero-actions">
@@ -546,7 +546,7 @@ export default function PredictionMarket() {
         <div className="section-kicker">
           <div>
             <span className="eyebrow">One complete lifecycle</span>
-            <h2 id="market-title">Prediction market console</h2>
+            <h2 id="market-title">Verity market console</h2>
           </div>
           <div className={`network-pill ${ready ? 'online' : ''}`}>
             <span />

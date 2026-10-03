@@ -1,4 +1,6 @@
-# Dark Prediction Market
+# Verity Prediction Market
+
+**Verity** is the short name. Predict freely. Challenge outcomes. Settle fairly.
 
 A self-contained prediction-market demonstration resolved by the Dark Optimistic Oracle on Aleo. This repository keeps the React frontend, user documentation, oracle source, market source, and local-devnet registry workaround together.
 
