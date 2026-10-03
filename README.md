@@ -1,5 +1,11 @@
 # Verity Prediction Market
 
+For screenshot demonstrations, add `?demo=demo-20261003` to the site URL and set
+**Demo step** before each action. Requests and results retain their initiating
+step. **Download audit LOG.md** exports the journal; **View demo audit log**
+shows the same Markdown. Never capture private record plaintext in slides.
+See [the screenplay](demo-slideshow/DEMO_SCREENPLAY.md).
+
 **Verity** is the short name. Predict freely. Challenge outcomes. Settle fairly.
 
 A self-contained prediction-market demonstration resolved by the Dark Optimistic Oracle on Aleo. This repository keeps the React frontend, user documentation, oracle source, market source, and local-devnet registry workaround together.

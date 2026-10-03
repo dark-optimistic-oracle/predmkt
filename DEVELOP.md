@@ -1,5 +1,14 @@
 # Development Notes
 
+## 2026-10-03 — Step-tagged screenshot demonstrations
+
+Added opt-in demo run/step controls and exact initiating-step snapshots to audit
+entries and Markdown exports. Added a regression test that changes the current
+step before a pending request completes. `pnpm check` passed: 37 unit tests,
+lint, static security checks and production build. Aleo tool versions unchanged.
+Native Shield control is now available after macOS permissions were granted;
+actual demo transactions are not yet captured.
+
 Last updated: 2026-08-15
 
 ## Responsibility

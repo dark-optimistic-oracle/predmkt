@@ -1,5 +1,15 @@
 # Prediction market Aleo call log
 
+## 2026-10-03 — Demo preparation (run demo-20261003)
+
+Purpose: demonstrate actual market operations with screenshot and call-log
+step labels. Added opt-in demo instrumentation and tested preservation of the
+initiating step through asynchronous results. `pnpm check` passed, including
+37 unit tests, lint, static security checks and production build. No market
+transaction has been submitted in this preparation. Wallet access was blocked
+by macOS permissions, subsequently enabled by the user; Shield is now unlocked.
+Planned calls in the screenplay are not claimed as executed evidence.
+
 Last updated: 2026-08-15.
 
 This file is the durable audit reference for Aleo reads and transactions

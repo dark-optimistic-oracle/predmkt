@@ -47,6 +47,7 @@ import {
   formatAleoAuditInputs,
 } from './lib/aleoAudit';
 import { waitForWalletTransaction } from './lib/aleoTransactionStatus';
+import DemoAuditControl from './DemoAuditControl';
 
 type Stage = 'trade' | 'report' | 'challenge' | 'settle';
 type Notice = { type: 'success' | 'error'; message: string };
@@ -503,6 +504,7 @@ export default function PredictionMarket() {
 
   return (
     <main id="top">
+      <DemoAuditControl />
       <section className="hero">
         <div className="hero-copy">
           <span className="eyebrow"><Sparkles aria-hidden="true" size={14} /> Live protocol demonstration</span>

@@ -4,12 +4,25 @@ import {
   buildAleoAuditMarkdown,
   completeAleoCall,
   formatAleoAuditInputs,
+  setAleoDemoStep,
 } from './aleoAudit';
 
 describe('persistent Aleo audit journal', () => {
+  it('retains the initiating demo step through asynchronous completion', () => {
+    vi.spyOn(console, 'info').mockImplementation(() => undefined);
+    window.history.replaceState({}, '', '/?demo=demo-20261003');
+    setAleoDemoStep('VER-03');
+    const call = beginAleoCall({kind: 'read', network: 'testnet', description: 'Read market', function: 'get_mapping_value', parameters: {}});
+    setAleoDemoStep('VER-04');
+    completeAleoCall(call, 'response', {result: {httpStatus: 200}});
+    const exported = buildAleoAuditMarkdown();
+    expect(exported.match(/"step": "VER-03"/g)).toHaveLength(2);
+    expect(exported).not.toContain('"step": "VER-04"');
+  });
   beforeEach(() => {
     window.localStorage.clear();
     vi.restoreAllMocks();
+    window.history.replaceState({}, '', '/');
   });
 
   it('automatically retains calls and exports human-readable Markdown with JSON evidence', () => {
